@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoJSON Canvas Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 2px solid #333;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+        .info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls button {
+            margin-right: 10px;
+        }
+        .mode-active {
+            background: #1a73e8 !important;
+            color: white !important;
+        }
+        .annotation {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            pointer-events: none;
+            z-index: 50;
+            border: 1px solid #ddd;
+            font-weight: 500;
+            color: #333;
+        }
+        .drawing-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .drawing-modal.show {
+            display: flex;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        #mainCanvas .canvas-wrapper {
+            position: relative;
+        }
+        #drawingCanvasContainer .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .drawing-container {
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        #mainCanvas {
+            display: block;
+        }
+        #drawingCanvasContainer {
+            display: none;
+        }
+        .view-toggle {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .canvas-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .canvas-tab {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            background: #f1f3f4;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            transition: all 0.2s;
+        }
+        .canvas-tab:hover {
+            background: #e8eaed;
+            border-color: #4285f4;
+        }
+        .canvas-tab.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        .canvas-area {
+            position: relative;
+            display: flex;
+        }
+        .canvas-panels {
+            position: relative;
+        }
+        .canvas-panel {
+            display: none;
+            position: relative;
+        }
+        .canvas-panel.active {
+            display: block;
+        }
+        .drawing-tools {
+            position: absolute;
+            top: 20px;
+            right: -180px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 90%;
+            overflow-y: auto;
+            width: 160px;
+        }
+        .tool-btn {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover {
+            background: #f5f5f5;
+            border-color: #4285f4;
+        }
+        .tool-btn.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        .drawing-canvas {
+            border: 2px solid #ddd;
+            background: white;
+            cursor: crosshair;
+            position: relative;
+        }
+        .preview-layer {
+            z-index: 10;
+        }
+        .eraser-cursor {
+            position: absolute;
+            border: 2px solid #ea4335;
+            pointer-events: none;
+            display: none;
+            background: rgba(234, 67, 53, 0.1);
+        }
+        .eraser-cursor.circle {
+            border-radius: 50%;
+        }
+        .eraser-cursor.square {
+            border-radius: 0;
+        }
+        .text-input-box {
+            position: absolute;
+            border: 2px dashed #4285f4;
+            background: rgba(66, 133, 244, 0.1);
+            padding: 5px;
+            min-width: 100px;
+            min-height: 30px;
+            display: none;
+        }
+        .text-input-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+        }
+        .close-drawing {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10;
+        }
+        .close-drawing:hover {
+            background: #c5221f;
+        }
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+        .color-picker-container label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 20px;
+        }
+        .modal-content textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .modal-content textarea:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+        .modal-content select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            box-sizing: border-box;
+            background: white;
+        }
+        .modal-content select:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #4285f4;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #3367d6;
+        }
+        .btn-secondary {
+            background: #f1f3f4;
+            color: #5f6368;
+        }
+        .btn-secondary:hover {
+            background: #e8eaed;
+        }
+        .point-label {
+            position: absolute;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: none;
+            z-index: 100;
+            transform: translate(0, 0);
+        }
+        #labels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .polygon-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(66, 133, 244, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+        }
+        .polygon-hint.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>GeoJSON Canvas Viewer</h1>
+    
+    <div class="view-toggle">
+        <button id="geoViewBtn" class="btn btn-primary mode-active">GeoJSON View</button>
+        <button id="drawViewBtn" class="btn btn-secondary">Custom Drawing View</button>
+    </div>
+    
+    <div class="main-container">
+        <!-- GeoJSON View -->
+        <div id="mainCanvas">
+            <div class="controls">
+                <button id="selectMode" class="btn btn-primary mode-active">Select Mode</button>
+                <button id="addMode" class="btn btn-secondary">Add Pin Mode</button>
+                <button id="annotateMode" class="btn btn-secondary">Annotate Mode</button>
+                <button id="clearPins" class="btn btn-secondary">Clear Custom Pins</button>
+                <button id="exportGeoJSON" class="btn btn-primary">Export GeoJSON</button>
+            </div>
+            <div class="controls">
+                <label for="rotationSlider" style="margin-right: 10px; font-weight: 500;">Rotate Polygon:</label>
+                <input type="range" id="rotationSlider" min="0" max="360" value="0" style="width: 300px; vertical-align: middle;">
+                <span id="rotationValue" style="margin-left: 10px; font-weight: 500;">0°</span>
+                <button id="resetRotation" class="btn btn-secondary" style="margin-left: 15px;">Reset Rotation</button>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="mapCanvas" width="800" height="600"></canvas>
+                <div id="labels"></div>
+                <div id="annotations"></div>
+            </div>
+            <div class="info">
+                <p><strong>Polygon:</strong> <span style="color: #4285f4;">Blue fill</span> with <span style="color: #1a73e8;">dark blue stroke</span></p>
+                <p><strong>Original Points:</strong> <span style="color: #ea4335;">Red circles</span></p>
+                <p><strong>Custom Pins:</strong> <span style="color: #34a853;">Green circles</span> - Added by you</p>
+                <p><strong>Annotations:</strong> <span style="color: #fbbc04;">Yellow labels</span> - Click anywhere to add text annotations</p>
+                <p><strong>Tip:</strong> Switch modes to add pins, annotate anywhere, or select points. Click any point to add text.</p>
+                <p><strong>Location:</strong> Paris, France (near the Louvre)</p>
+            </div>
+        </div>
+        
+        <!-- Custom Drawing View -->
+        <div id="drawingCanvasContainer">
+            <div class="controls">
+                <button id="drawSelectMode" class="btn btn-secondary">Select Mode</button>
+                <button id="drawAddPinMode" class="btn btn-secondary">Add Pin Mode</button>
+                <button id="drawAnnotateMode" class="btn btn-secondary">Annotate Mode</button>
+                <button id="drawClear" class="btn btn-secondary">Clear</button>
+                <button id="exportDrawing" class="btn btn-primary">Export Drawing</button>
+            </div>
+            <div class="canvas-tabs">
+                <button class="canvas-tab active" data-canvas="1">Structure 1</button>
+                <button class="canvas-tab" data-canvas="2">Structure 2</button>
+            </div>
+            <div class="canvas-area">
+                <div class="canvas-panels">
+                    <div class="canvas-wrapper canvas-panel active" id="canvasPanel1">
+                        <canvas id="drawingCanvas1" class="drawing-canvas" width="1000" height="700"></canvas>
+                        <div id="eraserCursor1" class="eraser-cursor"></div>
+                        <div id="textInputBox1" class="text-input-box">
+                            <input type="text" id="textInput1" placeholder="Type text here...">
+                        </div>
+                        <div id="drawLabels1"></div>
+                        <div id="drawAnnotations1"></div>
+                    </div>
+                    <div class="canvas-wrapper canvas-panel" id="canvasPanel2">
+                        <canvas id="drawingCanvas2" class="drawing-canvas" width="1000" height="700"></canvas>
+                        <div id="eraserCursor2" class="eraser-cursor"></div>
+                        <div id="textInputBox2" class="text-input-box">
+                            <input type="text" id="textInput2" placeholder="Type text here...">
+                        </div>
+                        <div id="drawLabels2"></div>
+                        <div id="drawAnnotations2"></div>
+                    </div>
+                </div>
+                <div class="drawing-tools">
+                    <button class="tool-btn active" data-tool="pencil">✏️ Pencil</button>
+                    <button class="tool-btn" data-tool="line">📏 Line</button>
+                    <button class="tool-btn" data-tool="dottedLine">┄ Dotted Line</button>
+                    <button class="tool-btn" data-tool="rectangle">▭ Rectangle</button>
+                    <button class="tool-btn" data-tool="circle">⭕ Circle</button>
+                    <button class="tool-btn" data-tool="eraser">🧹 Eraser</button>
+                    <button class="tool-btn" data-tool="closedPolygon">⬡ Closed Polygon</button>
+                    <button class="tool-btn" data-tool="openPolygon">⚊ Open Polygon</button>
+                    <button class="tool-btn" data-tool="text">📝 Text</button>
+                    <button class="tool-btn" data-tool="undo" style="background: #fff3cd; border-color: #ffc107;">↶ Undo</button>
+                    <button class="tool-btn" data-tool="redo" style="background: #d1ecf1; border-color: #17a2b8;">↷ Redo</button>
+                    <div class="color-picker-container">
+                        <label>Color:</label>
+                        <input type="color" id="drawingColor" value="#000000">
+                    </div>
+                    <div class="color-picker-container">
+                        <label>Width:</label>
+                        <input type="range" id="lineWidth" min="1" max="20" value="2" style="width: 80px;">
+                    </div>
+                    <div class="color-picker-container" id="eraserSizeContainer" style="display: none;">
+                        <label>Eraser:</label>
+                        <input type="range" id="eraserSize" min="5" max="50" value="20" style="width: 80px;">
+                    </div>
+                    <div class="color-picker-container" id="eraserTypeContainer" style="display: none;">
+                        <label>Shape:</label>
+                        <select id="eraserType" style="width: 90px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="circle">Circle</option>
+                            <option value="square">Square</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="polygon-hint" id="polygonHint">
+                Click to add points. Press <strong>ESC</strong> to finish or <strong>Double-click</strong> to complete polygon.
+            </div>
+            <div class="info">
+                <p><strong>Custom Pins:</strong> <span style="color: #34a853;">Green circles</span> - Click in Add Pin Mode to add</p>
+                <p><strong>Annotations:</strong> <span style="color: #fbbc04;">Yellow labels</span> - Click anywhere to add text</p>
+                <p><strong>Tip:</strong> Use drawing tools to create, then switch to Select/Add Pin/Annotate modes for interactive features</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Add Custom Text</h2>
+            <textarea id="customText" placeholder="Enter your custom text here..."></textarea>
+            <select id="termiteType" style="display: none;">
+                <option value="">Select Termite Type</option>
+                <option value="Subterranean Termites">Subterranean Termites</option>
+                <option value="Drywood Termites">Drywood Termites</option>
+                <option value="Dampwood Termites">Dampwood Termites</option>
+                <option value="Formosan Termites">Formosan Termites</option>
+                <option value="Conehead Termites">Conehead Termites</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveText()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const geojson = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "id": "94fc1a86-1843-4db8-94bc-5cbac98c4bf9",
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [2.306948881, 48.854796034],
+                                [2.306978124, 48.854759168],
+                                [2.307025219, 48.854728772],
+                                [2.307238865, 48.85487281],
+                                [2.307318225, 48.854893604],
+                                [2.307223739, 48.855001572],
+                                [2.307159854, 48.854976422],
+                                [2.307193695, 48.854942818],
+                                [2.307148268, 48.854934899],
+                                [2.306948881, 48.854796034]
+                            ]
+                        ]
+                    },
+                    "properties": {"mode": "polygon"}
+                },
+                {
+                    "id": "b63873db-5640-4eec-a6f3-34a2465e3c52",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.306978517, 48.854798228]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "fd6414b6-6c63-4c05-b71f-370a78cd5821",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.307034996, 48.854752626]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "4f6222a3-7368-4be5-9f12-d1b30388f8c7",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.307160875, 48.854832965]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "d066ee45-f19e-4f65-9046-7b4e62c25928",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.307235906, 48.854884407]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "075dcbc5-4f5f-4527-ac33-7e5f2837842a",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.30727572, 48.854902963]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "37541006-23e1-42a4-97e8-ff3125aa8fcf",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.307211836, 48.854975653]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "5c64cf67-a71d-4330-80c4-b31d4a50c7e1",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.3070859, 48.854876006]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "443a7dc9-1e22-4be7-b7ed-2381a72bc28c",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.307037513, 48.854848535]},
+                    "properties": {"mode": "point"}
+                },
+                {
+                    "id": "dcb8d8ae-455d-4e49-a1e0-d44be3ee511f",
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [2.307166889, 48.854927092]},
+                    "properties": {"mode": "point"}
+                }
+            ]
+        };
+
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        const labelsContainer = document.getElementById('labels');
+        const annotationsContainer = document.getElementById('annotations');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const textArea = document.getElementById('customText');
+        const termiteTypeSelect = document.getElementById('termiteType');
+        
+        const selectModeBtn = document.getElementById('selectMode');
+        const addModeBtn = document.getElementById('addMode');
+        const annotateModeBtn = document.getElementById('annotateMode');
+        const clearPinsBtn = document.getElementById('clearPins');
+        const exportBtn = document.getElementById('exportGeoJSON');
+        const rotationSlider = document.getElementById('rotationSlider');
+        const rotationValue = document.getElementById('rotationValue');
+        const resetRotationBtn = document.getElementById('resetRotation');
+        const geoViewBtn = document.getElementById('geoViewBtn');
+        const drawViewBtn = document.getElementById('drawViewBtn');
+        const mainCanvas = document.getElementById('mainCanvas');
+        const drawingCanvasContainer = document.getElementById('drawingCanvasContainer');
+        
+        let pointsData = [];
+        let selectedPointIndex = null;
+        let bounds = null;
+        let mode = 'select'; // 'select' or 'add' or 'annotate'
+        let customPins = []; // Store user-added pins separately
+        let annotations = []; // Store free-form annotations
+        let selectedAnnotationIndex = null; // Track which annotation is being edited
+        let rotationAngle = 0; // Rotation angle in degrees
+        let centerPoint = null; // Center point for rotation
+        let canvasStates = {};
+        let activeCanvasId = 1;
+        let activeState = null;
+        
+        // Find bounds of all coordinates
+        function getBounds(features) {
+            let minLon = Infinity, maxLon = -Infinity;
+            let minLat = Infinity, maxLat = -Infinity;
+            
+            features.forEach(feature => {
+                if (feature.geometry.type === 'Polygon') {
+                    feature.geometry.coordinates[0].forEach(coord => {
+                        minLon = Math.min(minLon, coord[0]);
+                        maxLon = Math.max(maxLon, coord[0]);
+                        minLat = Math.min(minLat, coord[1]);
+                        maxLat = Math.max(maxLat, coord[1]);
+                    });
+                } else if (feature.geometry.type === 'Point') {
+                    minLon = Math.min(minLon, feature.geometry.coordinates[0]);
+                    maxLon = Math.max(maxLon, feature.geometry.coordinates[0]);
+                    minLat = Math.min(minLat, feature.geometry.coordinates[1]);
+                    maxLat = Math.max(maxLat, feature.geometry.coordinates[1]);
+                }
+            });
+            
+            return { minLon, maxLon, minLat, maxLat };
+        }
+        
+        // Convert lat/lon to canvas x/y
+        function projectToCanvas(lon, lat, bounds) {
+            const padding = 50;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+            
+            let x = padding + ((lon - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width;
+            // Flip Y because canvas Y increases downward but latitude increases upward
+            let y = padding + ((bounds.maxLat - lat) / (bounds.maxLat - bounds.minLat)) * height;
+            
+            // Apply rotation if needed
+            if (rotationAngle !== 0 && centerPoint) {
+                const rotated = rotatePoint(x, y, centerPoint.x, centerPoint.y, rotationAngle);
+                x = rotated.x;
+                y = rotated.y;
+            }
+            
+            return { x, y };
+        }
+        
+        // Rotate a point around a center
+        function rotatePoint(x, y, cx, cy, angleDeg) {
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const cos = Math.cos(angleRad);
+            const sin = Math.sin(angleRad);
+            
+            const dx = x - cx;
+            const dy = y - cy;
+            
+            return {
+                x: cos * dx - sin * dy + cx,
+                y: sin * dx + cos * dy + cy
+            };
+        }
+        
+        // Inverse rotation for click detection
+        function inverseRotatePoint(x, y, cx, cy, angleDeg) {
+            return rotatePoint(x, y, cx, cy, -angleDeg);
+        }
+        
+        // Calculate center point of the polygon
+        function calculateCenter(bounds) {
+            const padding = 50;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+            
+            const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+            const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+            
+            const x = padding + ((centerLon - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width;
+            const y = padding + ((bounds.maxLat - centerLat) / (bounds.maxLat - bounds.minLat)) * height;
+            
+            return { x, y };
+        }
+        
+        // Convert canvas x/y back to lat/lon
+        function canvasToLatLon(x, y, bounds) {
+            const padding = 50;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+            
+            const lon = bounds.minLon + ((x - padding) / width) * (bounds.maxLon - bounds.minLon);
+            const lat = bounds.maxLat - ((y - padding) / height) * (bounds.maxLat - bounds.minLat);
+            
+            return { lon, lat };
+        }
+        
+        // Check if a point is inside the polygon
+        function isPointInPolygon(x, y, polygon) {
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i].x, yi = polygon[i].y;
+                const xj = polygon[j].x, yj = polygon[j].y;
+                
+                const intersect = ((yi > y) !== (yj > y))
+                    && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+        
+        // Draw the GeoJSON
+        function drawGeoJSON() {
+            bounds = getBounds(geojson.features);
+            centerPoint = calculateCenter(bounds);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pointsData = [];
+            let polygonPoints = [];
+            
+            geojson.features.forEach((feature, index) => {
+                if (feature.geometry.type === 'Polygon') {
+                    // Draw polygon
+                    ctx.beginPath();
+                    const coords = feature.geometry.coordinates[0];
+                    coords.forEach((coord, i) => {
+                        const { x, y } = projectToCanvas(coord[0], coord[1], bounds);
+                        polygonPoints.push({ x, y });
+                        
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    });
+                    ctx.closePath();
+                    
+                    ctx.fillStyle = 'rgba(66, 133, 244, 0.3)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#1a73e8';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                } else if (feature.geometry.type === 'Point') {
+                    // Draw original point
+                    const { x, y } = projectToCanvas(
+                        feature.geometry.coordinates[0],
+                        feature.geometry.coordinates[1],
+                        bounds
+                    );
+                    
+                    // Store point data for click detection with feature id
+                    pointsData.push({
+                        x, y,
+                        featureId: feature.id,
+                        text: feature.properties.customText || '',
+                        isCustom: false
+                    });
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ea4335';
+                    ctx.fill();
+                    ctx.strokeStyle = '#c5221f';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw custom pins
+            customPins.forEach(pin => {
+                const { x, y } = projectToCanvas(pin.lon, pin.lat, bounds);
+                
+                pointsData.push({
+                    x, y,
+                    featureId: pin.id,
+                    text: pin.text || '',
+                    isCustom: true
+                });
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#34a853';
+                ctx.fill();
+                ctx.strokeStyle = '#1e8e3e';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+            
+            renderLabels();
+            renderAnnotations();
+            return polygonPoints;
+        }
+        
+        // Render labels for points with custom text
+        function renderLabels() {
+            labelsContainer.innerHTML = '';
+            
+            pointsData.forEach(point => {
+                if (point.text) {
+                    const label = document.createElement('div');
+                    label.className = 'point-label';
+                    label.textContent = point.text;
+                    label.style.left = (point.x + 10) + 'px';
+                    label.style.top = (point.y - 10) + 'px';
+                    labelsContainer.appendChild(label);
+                }
+            });
+        }
+        
+        // Render annotations for polygon edges
+        function renderAnnotations() {
+            annotationsContainer.innerHTML = '';
+            
+            annotations.forEach((annotation, idx) => {
+                const { x, y } = projectToCanvas(annotation.lon, annotation.lat, bounds);
+                
+                const label = document.createElement('div');
+                label.className = 'annotation';
+                label.textContent = annotation.text;
+                label.style.left = x + 'px';
+                label.style.top = y + 'px';
+                label.style.transform = 'translate(-50%, -50%)';
+                label.style.background = 'rgba(251, 188, 4, 0.95)';
+                label.style.cursor = mode === 'select' ? 'pointer' : 'default';
+                label.style.pointerEvents = mode === 'select' ? 'auto' : 'none';
+                
+                // Allow editing annotations in select mode
+                if (mode === 'select') {
+                    label.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectedAnnotationIndex = idx;
+                        textArea.value = annotation.text;
+                        textArea.dataset.annotationEdit = 'true';
+                        modalTitle.textContent = 'Edit Annotation';
+                        textArea.style.display = 'block';
+                        termiteTypeSelect.style.display = 'none';
+                        modal.classList.add('show');
+                    });
+                }
+                
+                annotationsContainer.appendChild(label);
+            });
+        }
+        
+        // Handle canvas clicks
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            let clickX = e.clientX - rect.left;
+            let clickY = e.clientY - rect.top;
+            
+            if (mode === 'select') {
+                // Check if click is near any point (use actual screen coordinates)
+                let foundPoint = false;
+                pointsData.forEach((point, idx) => {
+                    // Points are already in rotated screen coordinates
+                    const distance = Math.sqrt(
+                        Math.pow(clickX - point.x, 2) + 
+                        Math.pow(clickY - point.y, 2)
+                    );
+                    
+                    if (distance <= 8) {
+                        selectedPointIndex = idx;
+                        termiteTypeSelect.value = point.text || '';
+                        modalTitle.textContent = 'Select Termite Type';
+                        textArea.style.display = 'none';
+                        termiteTypeSelect.style.display = 'block';
+                        modal.classList.add('show');
+                        foundPoint = true;
+                    }
+                });
+            } else if (mode === 'add') {
+                // Apply inverse rotation to click coordinates for boundary check
+                let checkX = clickX;
+                let checkY = clickY;
+                if (rotationAngle !== 0 && centerPoint) {
+                    const inverted = inverseRotatePoint(clickX, clickY, centerPoint.x, centerPoint.y, rotationAngle);
+                    checkX = inverted.x;
+                    checkY = inverted.y;
+                }
+                
+                // Get polygon points and check if click is inside
+                const polygonPoints = [];
+                geojson.features.forEach(feature => {
+                    if (feature.geometry.type === 'Polygon') {
+                        feature.geometry.coordinates[0].forEach(coord => {
+                            const padding = 50;
+                            const width = canvas.width - padding * 2;
+                            const height = canvas.height - padding * 2;
+                            
+                            const x = padding + ((coord[0] - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width;
+                            const y = padding + ((bounds.maxLat - coord[1]) / (bounds.maxLat - bounds.minLat)) * height;
+                            polygonPoints.push({ x, y });
+                        });
+                    }
+                });
+                
+                if (isPointInPolygon(checkX, checkY, polygonPoints)) {
+                    // Convert click to lat/lon (using inverse rotated coordinates)
+                    const { lon, lat } = canvasToLatLon(checkX, checkY, bounds);
+                    
+                    // Add new custom pin
+                    const newPin = {
+                        id: 'custom-' + Date.now(),
+                        lon,
+                        lat,
+                        text: ''
+                    };
+                    customPins.push(newPin);
+                    drawGeoJSON();
+                } else {
+                    alert('Please click inside the blue polygon area to add a pin');
+                }
+            } else if (mode === 'annotate') {
+                // Apply inverse rotation to click coordinates
+                let annotateX = clickX;
+                let annotateY = clickY;
+                if (rotationAngle !== 0 && centerPoint) {
+                    const inverted = inverseRotatePoint(clickX, clickY, centerPoint.x, centerPoint.y, rotationAngle);
+                    annotateX = inverted.x;
+                    annotateY = inverted.y;
+                }
+                
+                // Add annotation at click location
+                const { lon, lat } = canvasToLatLon(annotateX, annotateY, bounds);
+                
+                // Store the location temporarily
+                textArea.value = '';
+                textArea.dataset.annotationLon = lon;
+                textArea.dataset.annotationLat = lat;
+                modalTitle.textContent = 'Add Annotation';
+                textArea.style.display = 'block';
+                termiteTypeSelect.style.display = 'none';
+                modal.classList.add('show');
+            }
+        });
+        
+        // Close modal
+        function closeModal() {
+            modal.classList.remove('show');
+            selectedPointIndex = null;
+            selectedAnnotationIndex = null;
+            Object.values(canvasStates).forEach(state => {
+                state.selectedPinIndex = null;
+                state.selectedAnnotationIndex = null;
+            });
+            delete textArea.dataset.annotationLon;
+            delete textArea.dataset.annotationLat;
+            delete textArea.dataset.annotationEdit;
+            delete textArea.dataset.drawAnnotationX;
+            delete textArea.dataset.drawAnnotationY;
+            delete textArea.dataset.drawAnnotationEdit;
+            delete textArea.dataset.activeCanvasId;
+            
+            // Reset modal to default state
+            textArea.style.display = 'block';
+            termiteTypeSelect.style.display = 'none';
+            modalTitle.textContent = 'Add Custom Text';
+        }
+        
+        // Save custom text
+        function saveText() {
+            const activeCanvasDatasetId = textArea.dataset.activeCanvasId ? parseInt(textArea.dataset.activeCanvasId, 10) : null;
+            const targetState = activeCanvasDatasetId ? canvasStates[activeCanvasDatasetId] : null;
+            
+            if (textArea.dataset.drawAnnotationX && textArea.dataset.drawAnnotationY && targetState) {
+                // Saving new drawing annotation
+                const text = textArea.value.trim();
+                
+                if (text) {
+                    targetState.annotations.push({
+                        id: 'draw-annotation-' + Date.now(),
+                        x: parseFloat(textArea.dataset.drawAnnotationX),
+                        y: parseFloat(textArea.dataset.drawAnnotationY),
+                        text: text
+                    });
+                    renderDrawingAnnotations(targetState);
+                }
+                
+                delete textArea.dataset.drawAnnotationX;
+                delete textArea.dataset.drawAnnotationY;
+                delete textArea.dataset.activeCanvasId;
+                closeModal();
+            } else if (textArea.dataset.drawAnnotationEdit && targetState && targetState.selectedAnnotationIndex !== null) {
+                // Editing existing drawing annotation
+                const text = textArea.value.trim();
+                
+                if (text) {
+                    targetState.annotations[targetState.selectedAnnotationIndex].text = text;
+                    renderDrawingAnnotations(targetState);
+                }
+                
+                delete textArea.dataset.drawAnnotationEdit;
+                targetState.selectedAnnotationIndex = null;
+                delete textArea.dataset.activeCanvasId;
+                closeModal();
+            } else if (targetState && targetState.selectedPinIndex !== null) {
+                // Saving drawing pin text - use dropdown
+                const termiteType = termiteTypeSelect.value;
+                if (termiteType) {
+                    const code = generateRandomCode();
+                    const displayText = code + ' ' + termiteType;
+                    targetState.customPins[targetState.selectedPinIndex].text = displayText;
+                    renderDrawingLabels(targetState);
+                }
+                targetState.selectedPinIndex = null;
+                delete textArea.dataset.activeCanvasId;
+                closeModal();
+            } else if (textArea.dataset.annotationLon && textArea.dataset.annotationLat) {
+                // Saving new annotation
+                const text = textArea.value.trim();
+                
+                if (text) {
+                    annotations.push({
+                        id: 'annotation-' + Date.now(),
+                        lon: parseFloat(textArea.dataset.annotationLon),
+                        lat: parseFloat(textArea.dataset.annotationLat),
+                        text: text
+                    });
+                    renderAnnotations();
+                }
+                
+                delete textArea.dataset.annotationLon;
+                delete textArea.dataset.annotationLat;
+                closeModal();
+            } else if (textArea.dataset.annotationEdit && selectedAnnotationIndex !== null) {
+                // Editing existing annotation
+                const text = textArea.value.trim();
+                
+                if (text) {
+                    annotations[selectedAnnotationIndex].text = text;
+                    renderAnnotations();
+                }
+                
+                delete textArea.dataset.annotationEdit;
+                selectedAnnotationIndex = null;
+                closeModal();
+            } else if (selectedPointIndex !== null) {
+                // Saving point text - use dropdown for GeoJSON pins
+                const termiteType = termiteTypeSelect.value;
+                if (termiteType) {
+                    const code = generateRandomCode();
+                    const displayText = code + ' ' + termiteType;
+                    const clickedPoint = pointsData[selectedPointIndex];
+                    clickedPoint.text = displayText;
+                    
+                    if (clickedPoint.isCustom) {
+                        // Update custom pin
+                        const pin = customPins.find(p => p.id === clickedPoint.featureId);
+                        if (pin) {
+                            pin.text = displayText;
+                        }
+                    } else {
+                        // Update the correct feature by matching the feature id
+                        geojson.features.forEach(feature => {
+                            if (feature.geometry.type === 'Point' && feature.id === clickedPoint.featureId) {
+                                feature.properties.customText = displayText;
+                            }
+                        });
+                    }
+                    
+                    renderLabels();
+                }
+                closeModal();
+            }
+        }
+        
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Mode switching
+        selectModeBtn.addEventListener('click', () => {
+            mode = 'select';
+            selectModeBtn.classList.add('mode-active');
+            addModeBtn.classList.remove('mode-active');
+            annotateModeBtn.classList.remove('mode-active');
+            canvas.style.cursor = 'pointer';
+            drawGeoJSON();
+        });
+        
+        addModeBtn.addEventListener('click', () => {
+            mode = 'add';
+            addModeBtn.classList.add('mode-active');
+            selectModeBtn.classList.remove('mode-active');
+            annotateModeBtn.classList.remove('mode-active');
+            canvas.style.cursor = 'crosshair';
+            drawGeoJSON();
+        });
+        
+        annotateModeBtn.addEventListener('click', () => {
+            mode = 'annotate';
+            annotateModeBtn.classList.add('mode-active');
+            selectModeBtn.classList.remove('mode-active');
+            addModeBtn.classList.remove('mode-active');
+            canvas.style.cursor = 'text';
+            drawGeoJSON();
+        });
+        
+        // Clear custom pins
+        clearPinsBtn.addEventListener('click', () => {
+            customPins = [];
+            drawGeoJSON();
+        });
+        
+        // Rotation controls
+        rotationSlider.addEventListener('input', (e) => {
+            rotationAngle = parseInt(e.target.value);
+            rotationValue.textContent = rotationAngle + '°';
+            drawGeoJSON();
+        });
+        
+        resetRotationBtn.addEventListener('click', () => {
+            rotationAngle = 0;
+            rotationSlider.value = 0;
+            rotationValue.textContent = '0°';
+            drawGeoJSON();
+        });
+        
+        // Export GeoJSON
+        exportBtn.addEventListener('click', () => {
+            // Create a deep copy of the original geojson
+            const exportData = {
+                type: "FeatureCollection",
+                features: []
+            };
+            
+            // Add all original features with updated custom text
+            geojson.features.forEach(feature => {
+                const featureCopy = JSON.parse(JSON.stringify(feature));
+                exportData.features.push(featureCopy);
+            });
+            
+            // Add custom pins as new features
+            customPins.forEach(pin => {
+                exportData.features.push({
+                    id: pin.id,
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [pin.lon, pin.lat]
+                    },
+                    properties: {
+                        mode: "point",
+                        customText: pin.text || "",
+                        isCustomPin: true
+                    }
+                });
+            });
+            
+            // Add rotation metadata to export
+            exportData.metadata = {
+                rotationAngle: rotationAngle
+            };
+            
+            // Add annotations as features
+            annotations.forEach(ann => {
+                exportData.features.push({
+                    id: ann.id,
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [ann.lon, ann.lat]
+                    },
+                    properties: {
+                        mode: "annotation",
+                        annotationText: ann.text,
+                        isAnnotation: true
+                    }
+                });
+            });
+            
+            // Convert to JSON string with pretty formatting
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // Create a blob and download
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'exported-geojson-' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('GeoJSON exported successfully with annotations!');
+        });
+        
+        // View toggle
+        geoViewBtn.addEventListener('click', () => {
+            mainCanvas.style.display = 'block';
+            drawingCanvasContainer.style.display = 'none';
+            geoViewBtn.classList.add('mode-active');
+            geoViewBtn.classList.remove('btn-secondary');
+            geoViewBtn.classList.add('btn-primary');
+            drawViewBtn.classList.remove('mode-active');
+            drawViewBtn.classList.remove('btn-primary');
+            drawViewBtn.classList.add('btn-secondary');
+        });
+        
+        drawViewBtn.addEventListener('click', () => {
+            mainCanvas.style.display = 'none';
+            drawingCanvasContainer.style.display = 'block';
+            drawViewBtn.classList.add('mode-active');
+            drawViewBtn.classList.remove('btn-secondary');
+            drawViewBtn.classList.add('btn-primary');
+            geoViewBtn.classList.remove('mode-active');
+            geoViewBtn.classList.remove('btn-primary');
+            geoViewBtn.classList.add('btn-secondary');
+            initializeDrawingCanvas(activeState);
+        });
+        
+        // Custom Drawing Canvas functionality
+        const drawingColorInput = document.getElementById('drawingColor');
+        const lineWidthInput = document.getElementById('lineWidth');
+        const eraserSizeInput = document.getElementById('eraserSize');
+        const eraserSizeContainer = document.getElementById('eraserSizeContainer');
+        const eraserTypeContainer = document.getElementById('eraserTypeContainer');
+        const eraserTypeSelect = document.getElementById('eraserType');
+        const polygonHint = document.getElementById('polygonHint');
+        const canvasTabs = document.querySelectorAll('.canvas-tab');
+        const canvasPanels = {
+            1: document.getElementById('canvasPanel1'),
+            2: document.getElementById('canvasPanel2')
+        };
+        
+        // Drawing canvas mode and data
+        const drawSelectModeBtn = document.getElementById('drawSelectMode');
+        const drawAddPinModeBtn = document.getElementById('drawAddPinMode');
+        const drawAnnotateModeBtn = document.getElementById('drawAnnotateMode');
+        const drawClearBtn = document.getElementById('drawClear');
+        const exportDrawingBtn = document.getElementById('exportDrawing');
+        
+        let drawMode = 'draw'; // 'draw', 'select', 'addPin', 'annotate'
+        let currentTool = 'pencil';
+        let drawingColor = '#000000';
+        let lineWidth = 2;
+        let eraserSize = 20;
+        let eraserType = 'circle'; // 'circle' or 'square'
+        
+        function createCanvasState(id) {
+            const canvas = document.getElementById(`drawingCanvas${id}`);
+            const ctx = canvas.getContext('2d');
+            const state = {
+                id,
+                canvas,
+                ctx,
+                eraserCursor: document.getElementById(`eraserCursor${id}`),
+                textInputBox: document.getElementById(`textInputBox${id}`),
+                textInput: document.getElementById(`textInput${id}`),
+                labelsContainer: document.getElementById(`drawLabels${id}`),
+                annotationsContainer: document.getElementById(`drawAnnotations${id}`),
+                previewCanvas: null,
+                previewCtx: null,
+                customPins: [],
+                annotations: [],
+                drawingHistory: [],
+                polygonPoints: [],
+                selectedPinIndex: null,
+                selectedAnnotationIndex: null,
+                isInitialized: false,
+                isDrawing: false,
+                startX: 0,
+                startY: 0
+            };
+            
+            attachCanvasEvents(state);
+            return state;
+        }
+        
+        function attachCanvasEvents(state) {
+            state.canvas.addEventListener('mousedown', (e) => handleCanvasMouseDown(e, state));
+            state.canvas.addEventListener('mousemove', (e) => handleCanvasMouseMove(e, state));
+            state.canvas.addEventListener('mouseup', (e) => handleCanvasMouseUp(e, state));
+            state.canvas.addEventListener('mouseleave', () => handleCanvasMouseLeave(state));
+            state.canvas.addEventListener('mouseenter', () => handleCanvasMouseEnter(state));
+            state.canvas.addEventListener('dblclick', () => handleCanvasDoubleClick(state));
+        }
+        
+        canvasStates = {
+            1: createCanvasState(1),
+            2: createCanvasState(2)
+        };
+        
+        activeCanvasId = 1;
+        activeState = canvasStates[activeCanvasId];
+        
+        initializeDrawingCanvas(activeState);
+        updateCursorForState();
+        updateCanvasPanelVisibility();
+        
+        canvasTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetId = parseInt(tab.dataset.canvas, 10);
+                if (!canvasStates[targetId]) return;
+                setActiveCanvas(targetId);
+            });
+        });
+        
+        drawClearBtn.addEventListener('click', (e) => clearDrawingCanvas(e, activeState));
+        
+        exportDrawingBtn.addEventListener('click', () => {
+            const exportPayload = {
+                canvases: Object.values(canvasStates).map(state => ({
+                    id: `canvas-${state.id}`,
+                    image: state.canvas.toDataURL('image/png'),
+                    customPins: state.customPins,
+                    annotations: state.annotations
+                }))
+            };
+            
+            const jsonString = JSON.stringify(exportPayload, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'custom-drawing-' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Drawing exported successfully with pins and annotations!');
+        });
+        
+        function updateCanvasPanelVisibility() {
+            Object.entries(canvasPanels).forEach(([panelId, panelEl]) => {
+                const isActive = parseInt(panelId, 10) === activeCanvasId;
+                panelEl.classList.toggle('active', isActive);
+                panelEl.style.display = isActive ? 'block' : 'none';
+            });
+        }
+        
+        function setActiveCanvas(id) {
+            if (activeCanvasId === id) {
+                updateCanvasPanelVisibility();
+                return;
+            }
+            
+            // Clear preview and cursors for previous state
+            clearPreview(activeState);
+            activeState.textInputBox.style.display = 'none';
+            activeState.eraserCursor.style.display = 'none';
+            activeState.isDrawing = false;
+            
+            canvasTabs.forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.canvas-tab[data-canvas="${id}"]`).classList.add('active');
+            
+            Object.entries(canvasPanels).forEach(([panelId, panelEl]) => {
+                panelEl.classList.toggle('active', parseInt(panelId, 10) === id);
+            });
+            
+            activeCanvasId = id;
+            activeState = canvasStates[activeCanvasId];
+            initializeDrawingCanvas(activeState);
+            updateCursorForState();
+            updateCanvasPanelVisibility();
+            renderDrawingLabels(activeState);
+            renderDrawingAnnotations(activeState);
+        }
+        
+        function initializeDrawingCanvas(state) {
+            if (state.isInitialized) return;
+            
+            state.ctx.fillStyle = 'white';
+            state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+            saveDrawingState(state);
+            
+            if (!state.previewCanvas) {
+                state.previewCanvas = document.createElement('canvas');
+                state.previewCanvas.width = state.canvas.width;
+                state.previewCanvas.height = state.canvas.height;
+                state.previewCanvas.style.position = 'absolute';
+                state.previewCanvas.style.left = '0';
+                state.previewCanvas.style.top = '0';
+                state.previewCanvas.style.pointerEvents = 'none';
+                state.previewCanvas.style.border = 'none';
+                state.previewCanvas.style.backgroundColor = 'transparent';
+                state.previewCanvas.className = 'preview-layer';
+                state.canvas.parentElement.appendChild(state.previewCanvas);
+                state.previewCtx = state.previewCanvas.getContext('2d');
+            }
+            
+            state.isInitialized = true;
+        }
+        
+        function clearDrawingCanvas(e, state) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            state.customPins = [];
+            state.annotations = [];
+            state.drawingHistory = [];
+            state.polygonPoints = [];
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            state.ctx.fillStyle = 'white';
+            state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+            
+            if (state.previewCtx) {
+                state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+            }
+            
+            state.labelsContainer.innerHTML = '';
+            state.annotationsContainer.innerHTML = '';
+            
+            saveDrawingState(state);
+        }
+        
+        function saveDrawingState(state) {
+            const imageData = state.ctx.getImageData(0, 0, state.canvas.width, state.canvas.height);
+            state.drawingHistory.push(imageData);
+            if (state.drawingHistory.length > 50) {
+                state.drawingHistory.shift();
+            }
+        }
+        
+        function undoDrawing(state = activeState) {
+            if (state.drawingHistory.length > 1) {
+                state.drawingHistory.pop();
+                const previousState = state.drawingHistory[state.drawingHistory.length - 1];
+                state.ctx.putImageData(previousState, 0, 0);
+                drawPinsOnCanvas(state);
+            }
+        }
+        
+        function renderDrawingLabels(state = activeState) {
+            state.labelsContainer.innerHTML = '';
+            state.customPins.forEach(pin => {
+                if (pin.text) {
+                    const label = document.createElement('div');
+                    label.className = 'point-label';
+                    label.textContent = pin.text;
+                    label.style.left = (pin.x + 10) + 'px';
+                    label.style.top = (pin.y - 10) + 'px';
+                    state.labelsContainer.appendChild(label);
+                }
+            });
+        }
+        
+        function renderDrawingAnnotations(state = activeState) {
+            state.annotationsContainer.innerHTML = '';
+            
+            state.annotations.forEach((annotation, idx) => {
+                const label = document.createElement('div');
+                label.className = 'annotation';
+                label.textContent = annotation.text;
+                label.style.left = annotation.x + 'px';
+                label.style.top = annotation.y + 'px';
+                label.style.transform = 'translate(-50%, -50%)';
+                label.style.background = 'rgba(251, 188, 4, 0.95)';
+                label.style.cursor = drawMode === 'select' ? 'pointer' : 'default';
+                label.style.pointerEvents = drawMode === 'select' ? 'auto' : 'none';
+                
+                if (drawMode === 'select') {
+                    label.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        state.selectedAnnotationIndex = idx;
+                        textArea.value = annotation.text;
+                        textArea.dataset.drawAnnotationEdit = 'true';
+                        textArea.dataset.activeCanvasId = state.id;
+                        modalTitle.textContent = 'Edit Annotation';
+                        textArea.style.display = 'block';
+                        termiteTypeSelect.style.display = 'none';
+                        modal.classList.add('show');
+                    });
+                }
+                
+                state.annotationsContainer.appendChild(label);
+            });
+        }
+        
+        function drawPinsOnCanvas(state = activeState) {
+            state.customPins.forEach(pin => {
+                state.ctx.beginPath();
+                state.ctx.arc(pin.x, pin.y, 5, 0, Math.PI * 2);
+                state.ctx.fillStyle = '#34a853';
+                state.ctx.fill();
+                state.ctx.strokeStyle = '#1e8e3e';
+                state.ctx.lineWidth = 1;
+                state.ctx.stroke();
+            });
+        }
+        
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tool = btn.dataset.tool;
+                
+                if (tool === 'undo') {
+                    undoDrawing();
+                    return;
+                }
+                
+                drawMode = 'draw';
+                drawSelectModeBtn.classList.remove('mode-active');
+                drawAddPinModeBtn.classList.remove('mode-active');
+                drawAnnotateModeBtn.classList.remove('mode-active');
+                
+                document.querySelectorAll('.tool-btn').forEach(b => {
+                    if (b.dataset.tool !== 'undo') {
+                        b.classList.remove('active');
+                    }
+                });
+                
+                btn.classList.add('active');
+                currentTool = tool;
+                activeState.polygonPoints = [];
+                activeState.textInputBox.style.display = 'none';
+                clearPreview(activeState);
+                
+                if (tool === 'closedPolygon' || tool === 'openPolygon') {
+                    polygonHint.classList.add('show');
+                } else {
+                    polygonHint.classList.remove('show');
+                }
+                
+                if (tool === 'eraser') {
+                    eraserSizeContainer.style.display = 'flex';
+                    eraserTypeContainer.style.display = 'flex';
+                    activeState.canvas.style.cursor = 'none';
+                    activeState.eraserCursor.style.display = 'block';
+                    activeState.eraserCursor.className = 'eraser-cursor ' + eraserType;
+                } else {
+                    eraserSizeContainer.style.display = 'none';
+                    eraserTypeContainer.style.display = 'none';
+                    activeState.eraserCursor.style.display = 'none';
+                    activeState.canvas.style.cursor = tool === 'text' ? 'text' : 'crosshair';
+                }
+            });
+        });
+        
+        drawSelectModeBtn.addEventListener('click', () => {
+            drawMode = 'select';
+            drawSelectModeBtn.classList.add('mode-active');
+            drawAddPinModeBtn.classList.remove('mode-active');
+            drawAnnotateModeBtn.classList.remove('mode-active');
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            polygonHint.classList.remove('show');
+            activeState.canvas.style.cursor = 'pointer';
+            activeState.eraserCursor.style.display = 'none';
+            clearPreview(activeState);
+            renderDrawingAnnotations(activeState);
+        });
+        
+        drawAddPinModeBtn.addEventListener('click', () => {
+            drawMode = 'addPin';
+            drawAddPinModeBtn.classList.add('mode-active');
+            drawSelectModeBtn.classList.remove('mode-active');
+            drawAnnotateModeBtn.classList.remove('mode-active');
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            polygonHint.classList.remove('show');
+            activeState.canvas.style.cursor = 'crosshair';
+            activeState.eraserCursor.style.display = 'none';
+            clearPreview(activeState);
+        });
+        
+        drawAnnotateModeBtn.addEventListener('click', () => {
+            drawMode = 'annotate';
+            drawAnnotateModeBtn.classList.add('mode-active');
+            drawSelectModeBtn.classList.remove('mode-active');
+            drawAddPinModeBtn.classList.remove('mode-active');
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            polygonHint.classList.remove('show');
+            activeState.canvas.style.cursor = 'text';
+            activeState.eraserCursor.style.display = 'none';
+            clearPreview(activeState);
+        });
+        
+        drawingColorInput.addEventListener('change', (e) => {
+            drawingColor = e.target.value;
+        });
+        
+        lineWidthInput.addEventListener('input', (e) => {
+            lineWidth = parseInt(e.target.value, 10);
+        });
+        
+        eraserSizeInput.addEventListener('input', (e) => {
+            eraserSize = parseInt(e.target.value, 10);
+            Object.values(canvasStates).forEach(state => {
+                state.eraserCursor.style.width = eraserSize + 'px';
+                state.eraserCursor.style.height = eraserSize + 'px';
+            });
+        });
+        
+        eraserTypeSelect.addEventListener('change', (e) => {
+            eraserType = e.target.value;
+            Object.values(canvasStates).forEach(state => {
+                state.eraserCursor.className = 'eraser-cursor ' + eraserType;
+            });
+        });
+        
+        function handleCanvasMouseDown(e, state) {
+            if (state.id !== activeCanvasId) return;
+            const { x, y } = getCanvasCoordinates(e, state);
+            state.startX = x;
+            state.startY = y;
+            
+            if (drawMode === 'select') {
+                state.customPins.forEach((pin, idx) => {
+                    const distance = Math.hypot(x - pin.x, y - pin.y);
+                    if (distance <= 8) {
+                        state.selectedPinIndex = idx;
+                        textArea.dataset.activeCanvasId = state.id;
+                        termiteTypeSelect.value = pin.text || '';
+                        modalTitle.textContent = 'Select Termite Type';
+                        textArea.style.display = 'none';
+                        termiteTypeSelect.style.display = 'block';
+                        modal.classList.add('show');
+                    }
+                });
+                return;
+            }
+            
+            if (drawMode === 'addPin') {
+                const newPin = {
+                    id: 'draw-pin-' + Date.now(),
+                    x,
+                    y,
+                    text: ''
+                };
+                state.customPins.push(newPin);
+                drawPinsOnCanvas(state);
+                renderDrawingLabels(state);
+                saveDrawingState(state);
+                return;
+            }
+            
+            if (drawMode === 'annotate') {
+                textArea.value = '';
+                textArea.dataset.drawAnnotationX = x;
+                textArea.dataset.drawAnnotationY = y;
+                textArea.dataset.activeCanvasId = state.id;
+                textArea.style.display = 'block';
+                termiteTypeSelect.style.display = 'none';
+                modalTitle.textContent = 'Add Annotation';
+                modal.classList.add('show');
+                return;
+            }
+            
+            if (currentTool === 'text') {
+                state.textInputBox.style.display = 'block';
+                state.textInputBox.style.left = x + 'px';
+                state.textInputBox.style.top = y + 'px';
+                state.textInput.value = '';
+                state.textInput.focus();
+                
+                const submitText = () => {
+                    const value = state.textInput.value.trim();
+                    if (value) {
+                        state.ctx.fillStyle = drawingColor;
+                        state.ctx.font = `${lineWidth * 8}px Arial`;
+                        state.ctx.fillText(value, x, y + lineWidth * 8);
+                        saveDrawingState(state);
+                    }
+                    state.textInputBox.style.display = 'none';
+                    state.textInput.removeEventListener('blur', submitText);
+                    state.textInput.removeEventListener('keypress', handleEnter);
+                };
+                
+                const handleEnter = (event) => {
+                    if (event.key === 'Enter') {
+                        submitText();
+                    }
+                };
+                
+                state.textInput.addEventListener('blur', submitText, { once: true });
+                state.textInput.addEventListener('keypress', handleEnter);
+                return;
+            }
+            
+            if (currentTool === 'closedPolygon' || currentTool === 'openPolygon') {
+                state.polygonPoints.push({ x, y });
+                state.ctx.fillStyle = drawingColor;
+                state.ctx.beginPath();
+                state.ctx.arc(x, y, 3, 0, Math.PI * 2);
+                state.ctx.fill();
+                
+                if (state.polygonPoints.length > 1) {
+                    const prev = state.polygonPoints[state.polygonPoints.length - 2];
+                    state.ctx.strokeStyle = drawingColor;
+                    state.ctx.lineWidth = lineWidth;
+                    state.ctx.beginPath();
+                    state.ctx.moveTo(prev.x, prev.y);
+                    state.ctx.lineTo(x, y);
+                    state.ctx.stroke();
+                }
+                return;
+            }
+            
+            state.isDrawing = true;
+        }
+        
+        function handleCanvasMouseMove(e, state) {
+            if (state.id !== activeCanvasId) return;
+            const { x, y } = getCanvasCoordinates(e, state);
+            
+            if (currentTool === 'eraser' && drawMode === 'draw') {
+                state.eraserCursor.style.display = 'block';
+                state.eraserCursor.style.left = (x - eraserSize / 2) + 'px';
+                state.eraserCursor.style.top = (y - eraserSize / 2) + 'px';
+                state.eraserCursor.style.width = eraserSize + 'px';
+                state.eraserCursor.style.height = eraserSize + 'px';
+            }
+            
+            if (!state.isDrawing) {
+                if ((currentTool === 'closedPolygon' || currentTool === 'openPolygon') && state.polygonPoints.length > 0 && state.previewCtx) {
+                    state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+                    const lastPoint = state.polygonPoints[state.polygonPoints.length - 1];
+                    state.previewCtx.strokeStyle = drawingColor;
+                    state.previewCtx.lineWidth = lineWidth;
+                    state.previewCtx.setLineDash([5, 5]);
+                    state.previewCtx.beginPath();
+                    state.previewCtx.moveTo(lastPoint.x, lastPoint.y);
+                    state.previewCtx.lineTo(x, y);
+                    state.previewCtx.stroke();
+                    
+                    if (currentTool === 'closedPolygon' && state.polygonPoints.length > 2) {
+                        const firstPoint = state.polygonPoints[0];
+                        state.previewCtx.beginPath();
+                        state.previewCtx.moveTo(x, y);
+                        state.previewCtx.lineTo(firstPoint.x, firstPoint.y);
+                        state.previewCtx.stroke();
+                    }
+                    
+                    state.previewCtx.setLineDash([]);
+                }
+                return;
+            }
+            
+            if (drawMode !== 'draw') return;
+            
+            if (state.previewCtx) {
+                state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+            }
+            
+            if (currentTool === 'pencil') {
+                state.ctx.strokeStyle = drawingColor;
+                state.ctx.lineWidth = lineWidth;
+                state.ctx.lineCap = 'round';
+                state.ctx.beginPath();
+                state.ctx.moveTo(state.startX, state.startY);
+                state.ctx.lineTo(x, y);
+                state.ctx.stroke();
+                state.startX = x;
+                state.startY = y;
+            } else if (currentTool === 'eraser') {
+                if (eraserType === 'circle') {
+                    state.ctx.save();
+                    state.ctx.globalCompositeOperation = 'destination-out';
+                    state.ctx.beginPath();
+                    state.ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2);
+                    state.ctx.fill();
+                    state.ctx.restore();
+                } else {
+                    state.ctx.clearRect(x - eraserSize / 2, y - eraserSize / 2, eraserSize, eraserSize);
+                }
+            } else if (state.previewCtx) {
+                state.previewCtx.strokeStyle = drawingColor;
+                state.previewCtx.lineWidth = lineWidth;
+                state.previewCtx.setLineDash([5, 5]);
+                if (currentTool === 'line' || currentTool === 'dottedLine') {
+                    state.previewCtx.beginPath();
+                    state.previewCtx.moveTo(state.startX, state.startY);
+                    state.previewCtx.lineTo(x, y);
+                    state.previewCtx.stroke();
+                } else if (currentTool === 'rectangle') {
+                    state.previewCtx.strokeRect(state.startX, state.startY, x - state.startX, y - state.startY);
+                } else if (currentTool === 'circle') {
+                    const radius = Math.hypot(x - state.startX, y - state.startY);
+                    state.previewCtx.beginPath();
+                    state.previewCtx.arc(state.startX, state.startY, radius, 0, Math.PI * 2);
+                    state.previewCtx.stroke();
+                }
+                state.previewCtx.setLineDash([]);
+            }
+        }
+        
+        function handleCanvasMouseUp(e, state) {
+            if (state.id !== activeCanvasId || !state.isDrawing || drawMode !== 'draw') return;
+            const { x, y } = getCanvasCoordinates(e, state);
+            
+            const finalColor = (drawingColor === '#ffffff' || drawingColor === '#FFFFFF') ? '#000000' : drawingColor;
+            state.ctx.strokeStyle = finalColor;
+            state.ctx.fillStyle = finalColor;
+            state.ctx.lineWidth = lineWidth;
+            state.ctx.lineCap = 'round';
+            state.ctx.lineJoin = 'round';
+            
+            if (currentTool === 'line') {
+                state.ctx.beginPath();
+                state.ctx.moveTo(state.startX, state.startY);
+                state.ctx.lineTo(x, y);
+                state.ctx.stroke();
+            } else if (currentTool === 'dottedLine') {
+                state.ctx.setLineDash([10, 5]);
+                state.ctx.beginPath();
+                state.ctx.moveTo(state.startX, state.startY);
+                state.ctx.lineTo(x, y);
+                state.ctx.stroke();
+                state.ctx.setLineDash([]);
+            } else if (currentTool === 'rectangle') {
+                state.ctx.beginPath();
+                state.ctx.rect(state.startX, state.startY, x - state.startX, y - state.startY);
+                state.ctx.stroke();
+            } else if (currentTool === 'circle') {
+                const radius = Math.hypot(x - state.startX, y - state.startY);
+                state.ctx.beginPath();
+                state.ctx.arc(state.startX, state.startY, radius, 0, Math.PI * 2);
+                state.ctx.stroke();
+            }
+            
+            state.isDrawing = false;
+            clearPreview(state);
+            drawPinsOnCanvas(state);
+            saveDrawingState(state);
+        }
+        
+        function handleCanvasMouseLeave(state) {
+            if (state.previewCtx) {
+                state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+            }
+            state.eraserCursor.style.display = 'none';
+            state.isDrawing = false;
+        }
+        
+        function handleCanvasMouseEnter(state) {
+            if (state.id !== activeCanvasId) return;
+            if (currentTool === 'eraser' && drawMode === 'draw') {
+                state.eraserCursor.style.display = 'block';
+            }
+        }
+        
+        function handleCanvasDoubleClick(state) {
+            if (state.id !== activeCanvasId) return;
+            if ((currentTool === 'closedPolygon' || currentTool === 'openPolygon') && state.polygonPoints.length > 2 && drawMode === 'draw') {
+                completePolygon(state);
+            }
+        }
+        
+        function updateCursorForState() {
+            if (drawMode === 'select') {
+                activeState.canvas.style.cursor = 'pointer';
+            } else if (drawMode === 'annotate') {
+                activeState.canvas.style.cursor = 'text';
+            } else if (drawMode === 'addPin') {
+                activeState.canvas.style.cursor = 'crosshair';
+            } else {
+                activeState.canvas.style.cursor = currentTool === 'text' ? 'text' : (currentTool === 'eraser' ? 'none' : 'crosshair');
+            }
+            
+            if (currentTool === 'eraser' && drawMode === 'draw') {
+                activeState.eraserCursor.style.display = 'block';
+            } else {
+                activeState.eraserCursor.style.display = 'none';
+            }
+        }
+        
+        function completePolygon(state) {
+            if (state.polygonPoints.length < 2) return;
+            
+            state.ctx.strokeStyle = drawingColor;
+            state.ctx.lineWidth = lineWidth;
+            
+            if (currentTool === 'closedPolygon') {
+                const first = state.polygonPoints[0];
+                const last = state.polygonPoints[state.polygonPoints.length - 1];
+                state.ctx.beginPath();
+                state.ctx.moveTo(last.x, last.y);
+                state.ctx.lineTo(first.x, first.y);
+                state.ctx.stroke();
+            }
+            
+            state.polygonPoints = [];
+            clearPreview(state);
+            drawPinsOnCanvas(state);
+            saveDrawingState(state);
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && (currentTool === 'closedPolygon' || currentTool === 'openPolygon') && activeState.polygonPoints.length > 1 && drawMode === 'draw') {
+                completePolygon(activeState);
+            }
+        });
+        
+        function clearPreview(state) {
+            if (state.previewCtx) {
+                state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+            }
+        }
+        
+        function getCanvasCoordinates(event, state) {
+            const rect = state.canvas.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
+        
+        // Generate random 2-character code (A-Z)(0-9)
+        function generateRandomCode() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const letter = letters[Math.floor(Math.random() * letters.length)];
+            const digit = Math.floor(Math.random() * 10);
+            return letter + digit;
+        }
+        
+        drawGeoJSON();
+    </script>
+</body>
+</html>
