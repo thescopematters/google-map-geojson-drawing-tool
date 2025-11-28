@@ -138,6 +138,45 @@
             color: white;
             border-color: #4285f4;
         }
+        .geo-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .geo-tab {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            background: #f1f3f4;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            transition: all 0.2s;
+        }
+        .geo-tab:hover {
+            background: #e8eaed;
+            border-color: #4285f4;
+        }
+        .geo-tab.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        .geo-area {
+            position: relative;
+            display: flex;
+        }
+        .geo-panels {
+            position: relative;
+        }
+        .geo-panel {
+            display: none;
+            position: relative;
+        }
+        .geo-panel.active {
+            display: block;
+        }
         .canvas-area {
             position: relative;
             display: flex;
@@ -376,6 +415,65 @@
         .polygon-hint.show {
             display: block;
         }
+        .style-selector-container {
+            position: relative;
+        }
+        .style-selector-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            margin-top: 5px;
+            padding: 8px;
+        }
+        .style-selector-dropdown.show {
+            display: block;
+        }
+        .style-option-group {
+            margin-bottom: 12px;
+        }
+        .style-option-group:last-child {
+            margin-bottom: 0;
+        }
+        .style-option-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5f6368;
+            margin-bottom: 6px;
+        }
+        .style-options {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .style-option {
+            flex: 1;
+            min-width: 60px;
+            padding: 6px 8px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .style-option:hover {
+            background: #f5f5f5;
+            border-color: #4285f4;
+        }
+        .style-option.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
     </style>
 </head>
 <body>
@@ -395,17 +493,41 @@
                 <button id="annotateMode" class="btn btn-secondary">Annotate Mode</button>
                 <button id="clearPins" class="btn btn-secondary">Clear Custom Pins</button>
                 <button id="exportGeoJSON" class="btn btn-primary">Export GeoJSON</button>
+                <button id="captureGeoImage" class="btn btn-primary">📷 Capture Image</button>
             </div>
-            <div class="controls">
-                <label for="rotationSlider" style="margin-right: 10px; font-weight: 500;">Rotate Polygon:</label>
-                <input type="range" id="rotationSlider" min="0" max="360" value="0" style="width: 300px; vertical-align: middle;">
-                <span id="rotationValue" style="margin-left: 10px; font-weight: 500;">0°</span>
-                <button id="resetRotation" class="btn btn-secondary" style="margin-left: 15px;">Reset Rotation</button>
+            <div class="geo-tabs">
+                <button class="geo-tab active" data-geo="1">Polygon Map 1</button>
+                <button class="geo-tab" data-geo="2">Polygon Map 2</button>
             </div>
-            <div class="canvas-wrapper">
-                <canvas id="mapCanvas" width="800" height="600"></canvas>
-                <div id="labels"></div>
-                <div id="annotations"></div>
+            <div class="geo-area">
+                <div class="geo-panels">
+                    <div class="geo-panel active" id="geoPanel1">
+                        <div class="controls">
+                            <label for="rotationSlider1" style="margin-right: 10px; font-weight: 500;">Rotate Polygon:</label>
+                            <input type="range" id="rotationSlider1" min="0" max="360" value="0" style="width: 300px; vertical-align: middle;">
+                            <span id="rotationValue1" style="margin-left: 10px; font-weight: 500;">0°</span>
+                            <button id="resetRotation1" class="btn btn-secondary" style="margin-left: 15px;">Reset Rotation</button>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="mapCanvas1" width="800" height="600"></canvas>
+                            <div id="labels1"></div>
+                            <div id="annotations1"></div>
+                        </div>
+                    </div>
+                    <div class="geo-panel" id="geoPanel2">
+                        <div class="controls">
+                            <label for="rotationSlider2" style="margin-right: 10px; font-weight: 500;">Rotate Polygon:</label>
+                            <input type="range" id="rotationSlider2" min="0" max="360" value="0" style="width: 300px; vertical-align: middle;">
+                            <span id="rotationValue2" style="margin-left: 10px; font-weight: 500;">0°</span>
+                            <button id="resetRotation2" class="btn btn-secondary" style="margin-left: 15px;">Reset Rotation</button>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="mapCanvas2" width="800" height="600"></canvas>
+                            <div id="labels2"></div>
+                            <div id="annotations2"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="info">
                 <p><strong>Polygon:</strong> <span style="color: #4285f4;">Blue fill</span> with <span style="color: #1a73e8;">dark blue stroke</span></p>
@@ -425,6 +547,7 @@
                 <button id="drawAnnotateMode" class="btn btn-secondary">Annotate Mode</button>
                 <button id="drawClear" class="btn btn-secondary">Clear</button>
                 <button id="exportDrawing" class="btn btn-primary">Export Drawing</button>
+                <button id="captureDrawingImage" class="btn btn-primary">📷 Capture Image</button>
             </div>
             <div class="canvas-tabs">
                 <button class="canvas-tab active" data-canvas="1">Structure 1</button>
@@ -454,7 +577,6 @@
                 <div class="drawing-tools">
                     <button class="tool-btn active" data-tool="pencil">✏️ Pencil</button>
                     <button class="tool-btn" data-tool="line">📏 Line</button>
-                    <button class="tool-btn" data-tool="dottedLine">┄ Dotted Line</button>
                     <button class="tool-btn" data-tool="rectangle">▭ Rectangle</button>
                     <button class="tool-btn" data-tool="circle">⭕ Circle</button>
                     <button class="tool-btn" data-tool="eraser">🧹 Eraser</button>
@@ -463,6 +585,26 @@
                     <button class="tool-btn" data-tool="text">📝 Text</button>
                     <button class="tool-btn" data-tool="undo" style="background: #fff3cd; border-color: #ffc107;">↶ Undo</button>
                     <button class="tool-btn" data-tool="redo" style="background: #d1ecf1; border-color: #17a2b8;">↷ Redo</button>
+                    <div class="style-selector-container">
+                        <button class="tool-btn" id="styleSelectorBtn">⚙️ Line & Rectangle Style</button>
+                        <div class="style-selector-dropdown" id="styleSelectorDropdown">
+                            <div class="style-option-group">
+                                <label>Line Style:</label>
+                                <div class="style-options">
+                                    <div class="style-option active" data-type="line" data-style="solid">Solid</div>
+                                    <div class="style-option" data-type="line" data-style="dashed">Dashed</div>
+                                    <div class="style-option" data-type="line" data-style="dotted">Dotted</div>
+                                </div>
+                            </div>
+                            <div class="style-option-group">
+                                <label>Rectangle Style:</label>
+                                <div class="style-options">
+                                    <div class="style-option active" data-type="rectangle" data-style="solid">Solid</div>
+                                    <div class="style-option" data-type="rectangle" data-style="dotted">Dotted</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="color-picker-container">
                         <label>Color:</label>
                         <input type="color" id="drawingColor" value="#000000">
@@ -513,6 +655,9 @@
             </div>
         </div>
     </div>
+
+    <!-- html2canvas library for capturing canvas-wrapper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
         const geojson = {
@@ -597,10 +742,6 @@
             ]
         };
 
-        const canvas = document.getElementById('mapCanvas');
-        const ctx = canvas.getContext('2d');
-        const labelsContainer = document.getElementById('labels');
-        const annotationsContainer = document.getElementById('annotations');
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modalTitle');
         const textArea = document.getElementById('customText');
@@ -611,26 +752,23 @@
         const annotateModeBtn = document.getElementById('annotateMode');
         const clearPinsBtn = document.getElementById('clearPins');
         const exportBtn = document.getElementById('exportGeoJSON');
-        const rotationSlider = document.getElementById('rotationSlider');
-        const rotationValue = document.getElementById('rotationValue');
-        const resetRotationBtn = document.getElementById('resetRotation');
         const geoViewBtn = document.getElementById('geoViewBtn');
         const drawViewBtn = document.getElementById('drawViewBtn');
         const mainCanvas = document.getElementById('mainCanvas');
         const drawingCanvasContainer = document.getElementById('drawingCanvasContainer');
+        const geoTabs = document.querySelectorAll('.geo-tab');
+        const geoPanels = {
+            1: document.getElementById('geoPanel1'),
+            2: document.getElementById('geoPanel2')
+        };
         
-        let pointsData = [];
-        let selectedPointIndex = null;
-        let bounds = null;
         let mode = 'select'; // 'select' or 'add' or 'annotate'
-        let customPins = []; // Store user-added pins separately
-        let annotations = []; // Store free-form annotations
-        let selectedAnnotationIndex = null; // Track which annotation is being edited
-        let rotationAngle = 0; // Rotation angle in degrees
-        let centerPoint = null; // Center point for rotation
         let canvasStates = {};
         let activeCanvasId = 1;
         let activeState = null;
+        let geoStates = {};
+        let activeGeoId = 1;
+        let activeGeoState = null;
         
         // Find bounds of all coordinates
         function getBounds(features) {
@@ -737,110 +875,200 @@
             return inside;
         }
         
-        // Draw the GeoJSON
-        function drawGeoJSON() {
-            bounds = getBounds(geojson.features);
-            centerPoint = calculateCenter(bounds);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            pointsData = [];
+        // Create GeoJSON state for each view
+        function createGeoState(id) {
+            const canvas = document.getElementById(`mapCanvas${id}`);
+            const ctx = canvas.getContext('2d');
+            const state = {
+                id,
+                canvas,
+                ctx,
+                labelsContainer: document.getElementById(`labels${id}`),
+                annotationsContainer: document.getElementById(`annotations${id}`),
+                rotationSlider: document.getElementById(`rotationSlider${id}`),
+                rotationValue: document.getElementById(`rotationValue${id}`),
+                resetRotationBtn: document.getElementById(`resetRotation${id}`),
+                geojson: JSON.parse(JSON.stringify(geojson)), // Deep copy
+                pointsData: [],
+                selectedPointIndex: null,
+                bounds: null,
+                customPins: [],
+                annotations: [],
+                selectedAnnotationIndex: null,
+                rotationAngle: 0,
+                centerPoint: null
+            };
+            
+            // Attach canvas click event
+            canvas.addEventListener('click', (e) => handleGeoCanvasClick(e, state));
+            
+            // Attach rotation controls
+            state.rotationSlider.addEventListener('input', (e) => {
+                state.rotationAngle = parseInt(e.target.value, 10);
+                state.rotationValue.textContent = state.rotationAngle + '°';
+                drawGeoJSON(state);
+            });
+            
+            state.resetRotationBtn.addEventListener('click', () => {
+                state.rotationAngle = 0;
+                state.rotationSlider.value = 0;
+                state.rotationValue.textContent = '0°';
+                drawGeoJSON(state);
+            });
+            
+            return state;
+        }
+        
+        // Convert lat/lon to canvas x/y (with state)
+        function projectToCanvasState(lon, lat, bounds, state) {
+            const padding = 50;
+            const width = state.canvas.width - padding * 2;
+            const height = state.canvas.height - padding * 2;
+            
+            let x = padding + ((lon - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width;
+            let y = padding + ((bounds.maxLat - lat) / (bounds.maxLat - bounds.minLat)) * height;
+            
+            if (state.rotationAngle !== 0 && state.centerPoint) {
+                const rotated = rotatePoint(x, y, state.centerPoint.x, state.centerPoint.y, state.rotationAngle);
+                x = rotated.x;
+                y = rotated.y;
+            }
+            
+            return { x, y };
+        }
+        
+        // Calculate center point (with state)
+        function calculateCenterState(bounds, state) {
+            const padding = 50;
+            const width = state.canvas.width - padding * 2;
+            const height = state.canvas.height - padding * 2;
+            
+            const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+            const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+            
+            const x = padding + ((centerLon - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width;
+            const y = padding + ((bounds.maxLat - centerLat) / (bounds.maxLat - bounds.minLat)) * height;
+            
+            return { x, y };
+        }
+        
+        // Convert canvas x/y back to lat/lon (with state)
+        function canvasToLatLonState(x, y, bounds, state) {
+            const padding = 50;
+            const width = state.canvas.width - padding * 2;
+            const height = state.canvas.height - padding * 2;
+            
+            const lon = bounds.minLon + ((x - padding) / width) * (bounds.maxLon - bounds.minLon);
+            const lat = bounds.maxLat - ((y - padding) / height) * (bounds.maxLat - bounds.minLat);
+            
+            return { lon, lat };
+        }
+        
+        // Draw the GeoJSON (with state)
+        function drawGeoJSON(state = activeGeoState) {
+            if (!state) return;
+            
+            state.bounds = getBounds(state.geojson.features);
+            state.centerPoint = calculateCenterState(state.bounds, state);
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            state.pointsData = [];
             let polygonPoints = [];
             
-            geojson.features.forEach((feature, index) => {
+            state.geojson.features.forEach((feature, index) => {
                 if (feature.geometry.type === 'Polygon') {
-                    // Draw polygon
-                    ctx.beginPath();
+                    state.ctx.beginPath();
                     const coords = feature.geometry.coordinates[0];
                     coords.forEach((coord, i) => {
-                        const { x, y } = projectToCanvas(coord[0], coord[1], bounds);
+                        const { x, y } = projectToCanvasState(coord[0], coord[1], state.bounds, state);
                         polygonPoints.push({ x, y });
                         
                         if (i === 0) {
-                            ctx.moveTo(x, y);
+                            state.ctx.moveTo(x, y);
                         } else {
-                            ctx.lineTo(x, y);
+                            state.ctx.lineTo(x, y);
                         }
                     });
-                    ctx.closePath();
+                    state.ctx.closePath();
                     
-                    ctx.fillStyle = 'rgba(66, 133, 244, 0.3)';
-                    ctx.fill();
-                    ctx.strokeStyle = '#1a73e8';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    state.ctx.fillStyle = 'rgba(66, 133, 244, 0.3)';
+                    state.ctx.fill();
+                    state.ctx.strokeStyle = '#1a73e8';
+                    state.ctx.lineWidth = 2;
+                    state.ctx.stroke();
                     
                 } else if (feature.geometry.type === 'Point') {
-                    // Draw original point
-                    const { x, y } = projectToCanvas(
+                    const { x, y } = projectToCanvasState(
                         feature.geometry.coordinates[0],
                         feature.geometry.coordinates[1],
-                        bounds
+                        state.bounds,
+                        state
                     );
                     
-                    // Store point data for click detection with feature id
-                    pointsData.push({
+                    state.pointsData.push({
                         x, y,
                         featureId: feature.id,
                         text: feature.properties.customText || '',
                         isCustom: false
                     });
                     
-                    ctx.beginPath();
-                    ctx.arc(x, y, 5, 0, Math.PI * 2);
-                    ctx.fillStyle = '#ea4335';
-                    ctx.fill();
-                    ctx.strokeStyle = '#c5221f';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
+                    state.ctx.beginPath();
+                    state.ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    state.ctx.fillStyle = '#ea4335';
+                    state.ctx.fill();
+                    state.ctx.strokeStyle = '#c5221f';
+                    state.ctx.lineWidth = 1;
+                    state.ctx.stroke();
                 }
             });
             
-            // Draw custom pins
-            customPins.forEach(pin => {
-                const { x, y } = projectToCanvas(pin.lon, pin.lat, bounds);
+            state.customPins.forEach(pin => {
+                const { x, y } = projectToCanvasState(pin.lon, pin.lat, state.bounds, state);
                 
-                pointsData.push({
+                state.pointsData.push({
                     x, y,
                     featureId: pin.id,
                     text: pin.text || '',
                     isCustom: true
                 });
                 
-                ctx.beginPath();
-                ctx.arc(x, y, 5, 0, Math.PI * 2);
-                ctx.fillStyle = '#34a853';
-                ctx.fill();
-                ctx.strokeStyle = '#1e8e3e';
-                ctx.lineWidth = 1;
-                ctx.stroke();
+                state.ctx.beginPath();
+                state.ctx.arc(x, y, 5, 0, Math.PI * 2);
+                state.ctx.fillStyle = '#34a853';
+                state.ctx.fill();
+                state.ctx.strokeStyle = '#1e8e3e';
+                state.ctx.lineWidth = 1;
+                state.ctx.stroke();
             });
             
-            renderLabels();
-            renderAnnotations();
+            renderLabels(state);
+            renderAnnotations(state);
             return polygonPoints;
         }
         
-        // Render labels for points with custom text
-        function renderLabels() {
-            labelsContainer.innerHTML = '';
+        // Render labels for points with custom text (with state)
+        function renderLabels(state = activeGeoState) {
+            if (!state) return;
+            state.labelsContainer.innerHTML = '';
             
-            pointsData.forEach(point => {
+            state.pointsData.forEach(point => {
                 if (point.text) {
                     const label = document.createElement('div');
                     label.className = 'point-label';
                     label.textContent = point.text;
                     label.style.left = (point.x + 10) + 'px';
                     label.style.top = (point.y - 10) + 'px';
-                    labelsContainer.appendChild(label);
+                    state.labelsContainer.appendChild(label);
                 }
             });
         }
         
-        // Render annotations for polygon edges
-        function renderAnnotations() {
-            annotationsContainer.innerHTML = '';
+        // Render annotations for polygon edges (with state)
+        function renderAnnotations(state = activeGeoState) {
+            if (!state) return;
+            state.annotationsContainer.innerHTML = '';
             
-            annotations.forEach((annotation, idx) => {
-                const { x, y } = projectToCanvas(annotation.lon, annotation.lat, bounds);
+            state.annotations.forEach((annotation, idx) => {
+                const { x, y } = projectToCanvasState(annotation.lon, annotation.lat, state.bounds, state);
                 
                 const label = document.createElement('div');
                 label.className = 'annotation';
@@ -852,13 +1080,13 @@
                 label.style.cursor = mode === 'select' ? 'pointer' : 'default';
                 label.style.pointerEvents = mode === 'select' ? 'auto' : 'none';
                 
-                // Allow editing annotations in select mode
                 if (mode === 'select') {
                     label.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        selectedAnnotationIndex = idx;
+                        state.selectedAnnotationIndex = idx;
                         textArea.value = annotation.text;
                         textArea.dataset.annotationEdit = 'true';
+                        textArea.dataset.activeGeoId = state.id;
                         modalTitle.textContent = 'Edit Annotation';
                         textArea.style.display = 'block';
                         termiteTypeSelect.style.display = 'none';
@@ -866,28 +1094,29 @@
                     });
                 }
                 
-                annotationsContainer.appendChild(label);
+                state.annotationsContainer.appendChild(label);
             });
         }
         
-        // Handle canvas clicks
-        canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
+        // Handle canvas clicks (with state)
+        function handleGeoCanvasClick(e, state) {
+            if (state.id !== activeGeoId) return;
+            
+            const rect = state.canvas.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
             let clickY = e.clientY - rect.top;
             
             if (mode === 'select') {
-                // Check if click is near any point (use actual screen coordinates)
                 let foundPoint = false;
-                pointsData.forEach((point, idx) => {
-                    // Points are already in rotated screen coordinates
+                state.pointsData.forEach((point, idx) => {
                     const distance = Math.sqrt(
                         Math.pow(clickX - point.x, 2) + 
                         Math.pow(clickY - point.y, 2)
                     );
                     
                     if (distance <= 8) {
-                        selectedPointIndex = idx;
+                        state.selectedPointIndex = idx;
+                        textArea.dataset.activeGeoId = state.id;
                         termiteTypeSelect.value = point.text || '';
                         modalTitle.textContent = 'Select Termite Type';
                         textArea.style.display = 'none';
@@ -897,78 +1126,74 @@
                     }
                 });
             } else if (mode === 'add') {
-                // Apply inverse rotation to click coordinates for boundary check
                 let checkX = clickX;
                 let checkY = clickY;
-                if (rotationAngle !== 0 && centerPoint) {
-                    const inverted = inverseRotatePoint(clickX, clickY, centerPoint.x, centerPoint.y, rotationAngle);
+                if (state.rotationAngle !== 0 && state.centerPoint) {
+                    const inverted = inverseRotatePoint(clickX, clickY, state.centerPoint.x, state.centerPoint.y, state.rotationAngle);
                     checkX = inverted.x;
                     checkY = inverted.y;
                 }
                 
-                // Get polygon points and check if click is inside
                 const polygonPoints = [];
-                geojson.features.forEach(feature => {
+                state.geojson.features.forEach(feature => {
                     if (feature.geometry.type === 'Polygon') {
                         feature.geometry.coordinates[0].forEach(coord => {
                             const padding = 50;
-                            const width = canvas.width - padding * 2;
-                            const height = canvas.height - padding * 2;
+                            const width = state.canvas.width - padding * 2;
+                            const height = state.canvas.height - padding * 2;
                             
-                            const x = padding + ((coord[0] - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width;
-                            const y = padding + ((bounds.maxLat - coord[1]) / (bounds.maxLat - bounds.minLat)) * height;
+                            const x = padding + ((coord[0] - state.bounds.minLon) / (state.bounds.maxLon - state.bounds.minLon)) * width;
+                            const y = padding + ((state.bounds.maxLat - coord[1]) / (state.bounds.maxLat - state.bounds.minLat)) * height;
                             polygonPoints.push({ x, y });
                         });
                     }
                 });
                 
                 if (isPointInPolygon(checkX, checkY, polygonPoints)) {
-                    // Convert click to lat/lon (using inverse rotated coordinates)
-                    const { lon, lat } = canvasToLatLon(checkX, checkY, bounds);
+                    const { lon, lat } = canvasToLatLonState(checkX, checkY, state.bounds, state);
                     
-                    // Add new custom pin
                     const newPin = {
                         id: 'custom-' + Date.now(),
                         lon,
                         lat,
                         text: ''
                     };
-                    customPins.push(newPin);
-                    drawGeoJSON();
+                    state.customPins.push(newPin);
+                    drawGeoJSON(state);
                 } else {
                     alert('Please click inside the blue polygon area to add a pin');
                 }
             } else if (mode === 'annotate') {
-                // Apply inverse rotation to click coordinates
                 let annotateX = clickX;
                 let annotateY = clickY;
-                if (rotationAngle !== 0 && centerPoint) {
-                    const inverted = inverseRotatePoint(clickX, clickY, centerPoint.x, centerPoint.y, rotationAngle);
+                if (state.rotationAngle !== 0 && state.centerPoint) {
+                    const inverted = inverseRotatePoint(clickX, clickY, state.centerPoint.x, state.centerPoint.y, state.rotationAngle);
                     annotateX = inverted.x;
                     annotateY = inverted.y;
                 }
                 
-                // Add annotation at click location
-                const { lon, lat } = canvasToLatLon(annotateX, annotateY, bounds);
+                const { lon, lat } = canvasToLatLonState(annotateX, annotateY, state.bounds, state);
                 
-                // Store the location temporarily
                 textArea.value = '';
                 textArea.dataset.annotationLon = lon;
                 textArea.dataset.annotationLat = lat;
+                textArea.dataset.activeGeoId = state.id;
                 modalTitle.textContent = 'Add Annotation';
                 textArea.style.display = 'block';
                 termiteTypeSelect.style.display = 'none';
                 modal.classList.add('show');
             }
-        });
+        }
         
         // Close modal
         function closeModal() {
             modal.classList.remove('show');
-            selectedPointIndex = null;
-            selectedAnnotationIndex = null;
             Object.values(canvasStates).forEach(state => {
                 state.selectedPinIndex = null;
+                state.selectedAnnotationIndex = null;
+            });
+            Object.values(geoStates).forEach(state => {
+                state.selectedPointIndex = null;
                 state.selectedAnnotationIndex = null;
             });
             delete textArea.dataset.annotationLon;
@@ -978,6 +1203,7 @@
             delete textArea.dataset.drawAnnotationY;
             delete textArea.dataset.drawAnnotationEdit;
             delete textArea.dataset.activeCanvasId;
+            delete textArea.dataset.activeGeoId;
             
             // Reset modal to default state
             textArea.style.display = 'block';
@@ -988,106 +1214,110 @@
         // Save custom text
         function saveText() {
             const activeCanvasDatasetId = textArea.dataset.activeCanvasId ? parseInt(textArea.dataset.activeCanvasId, 10) : null;
-            const targetState = activeCanvasDatasetId ? canvasStates[activeCanvasDatasetId] : null;
+            const activeGeoDatasetId = textArea.dataset.activeGeoId ? parseInt(textArea.dataset.activeGeoId, 10) : null;
+            const targetCanvasState = activeCanvasDatasetId ? canvasStates[activeCanvasDatasetId] : null;
+            const targetGeoState = activeGeoDatasetId ? geoStates[activeGeoDatasetId] : null;
             
-            if (textArea.dataset.drawAnnotationX && textArea.dataset.drawAnnotationY && targetState) {
+            if (textArea.dataset.drawAnnotationX && textArea.dataset.drawAnnotationY && targetCanvasState) {
                 // Saving new drawing annotation
                 const text = textArea.value.trim();
                 
                 if (text) {
-                    targetState.annotations.push({
+                    targetCanvasState.annotations.push({
                         id: 'draw-annotation-' + Date.now(),
                         x: parseFloat(textArea.dataset.drawAnnotationX),
                         y: parseFloat(textArea.dataset.drawAnnotationY),
                         text: text
                     });
-                    renderDrawingAnnotations(targetState);
+                    renderDrawingAnnotations(targetCanvasState);
                 }
                 
                 delete textArea.dataset.drawAnnotationX;
                 delete textArea.dataset.drawAnnotationY;
                 delete textArea.dataset.activeCanvasId;
                 closeModal();
-            } else if (textArea.dataset.drawAnnotationEdit && targetState && targetState.selectedAnnotationIndex !== null) {
+            } else if (textArea.dataset.drawAnnotationEdit && targetCanvasState && targetCanvasState.selectedAnnotationIndex !== null) {
                 // Editing existing drawing annotation
                 const text = textArea.value.trim();
                 
                 if (text) {
-                    targetState.annotations[targetState.selectedAnnotationIndex].text = text;
-                    renderDrawingAnnotations(targetState);
+                    targetCanvasState.annotations[targetCanvasState.selectedAnnotationIndex].text = text;
+                    renderDrawingAnnotations(targetCanvasState);
                 }
                 
                 delete textArea.dataset.drawAnnotationEdit;
-                targetState.selectedAnnotationIndex = null;
+                targetCanvasState.selectedAnnotationIndex = null;
                 delete textArea.dataset.activeCanvasId;
                 closeModal();
-            } else if (targetState && targetState.selectedPinIndex !== null) {
+            } else if (targetCanvasState && targetCanvasState.selectedPinIndex !== null) {
                 // Saving drawing pin text - use dropdown
                 const termiteType = termiteTypeSelect.value;
                 if (termiteType) {
                     const code = generateRandomCode();
                     const displayText = code + ' ' + termiteType;
-                    targetState.customPins[targetState.selectedPinIndex].text = displayText;
-                    renderDrawingLabels(targetState);
+                    targetCanvasState.customPins[targetCanvasState.selectedPinIndex].text = displayText;
+                    renderDrawingLabels(targetCanvasState);
                 }
-                targetState.selectedPinIndex = null;
+                targetCanvasState.selectedPinIndex = null;
                 delete textArea.dataset.activeCanvasId;
                 closeModal();
-            } else if (textArea.dataset.annotationLon && textArea.dataset.annotationLat) {
-                // Saving new annotation
+            } else if (textArea.dataset.annotationLon && textArea.dataset.annotationLat && targetGeoState) {
+                // Saving new GeoJSON annotation
                 const text = textArea.value.trim();
                 
                 if (text) {
-                    annotations.push({
+                    targetGeoState.annotations.push({
                         id: 'annotation-' + Date.now(),
                         lon: parseFloat(textArea.dataset.annotationLon),
                         lat: parseFloat(textArea.dataset.annotationLat),
                         text: text
                     });
-                    renderAnnotations();
+                    renderAnnotations(targetGeoState);
                 }
                 
                 delete textArea.dataset.annotationLon;
                 delete textArea.dataset.annotationLat;
+                delete textArea.dataset.activeGeoId;
                 closeModal();
-            } else if (textArea.dataset.annotationEdit && selectedAnnotationIndex !== null) {
-                // Editing existing annotation
+            } else if (textArea.dataset.annotationEdit && targetGeoState && targetGeoState.selectedAnnotationIndex !== null) {
+                // Editing existing GeoJSON annotation
                 const text = textArea.value.trim();
                 
                 if (text) {
-                    annotations[selectedAnnotationIndex].text = text;
-                    renderAnnotations();
+                    targetGeoState.annotations[targetGeoState.selectedAnnotationIndex].text = text;
+                    renderAnnotations(targetGeoState);
                 }
                 
                 delete textArea.dataset.annotationEdit;
-                selectedAnnotationIndex = null;
+                targetGeoState.selectedAnnotationIndex = null;
+                delete textArea.dataset.activeGeoId;
                 closeModal();
-            } else if (selectedPointIndex !== null) {
-                // Saving point text - use dropdown for GeoJSON pins
+            } else if (targetGeoState && targetGeoState.selectedPointIndex !== null) {
+                // Saving GeoJSON point text - use dropdown
                 const termiteType = termiteTypeSelect.value;
                 if (termiteType) {
                     const code = generateRandomCode();
                     const displayText = code + ' ' + termiteType;
-                    const clickedPoint = pointsData[selectedPointIndex];
+                    const clickedPoint = targetGeoState.pointsData[targetGeoState.selectedPointIndex];
                     clickedPoint.text = displayText;
                     
                     if (clickedPoint.isCustom) {
-                        // Update custom pin
-                        const pin = customPins.find(p => p.id === clickedPoint.featureId);
+                        const pin = targetGeoState.customPins.find(p => p.id === clickedPoint.featureId);
                         if (pin) {
                             pin.text = displayText;
                         }
                     } else {
-                        // Update the correct feature by matching the feature id
-                        geojson.features.forEach(feature => {
+                        targetGeoState.geojson.features.forEach(feature => {
                             if (feature.geometry.type === 'Point' && feature.id === clickedPoint.featureId) {
                                 feature.properties.customText = displayText;
                             }
                         });
                     }
                     
-                    renderLabels();
+                    renderLabels(targetGeoState);
                 }
+                targetGeoState.selectedPointIndex = null;
+                delete textArea.dataset.activeGeoId;
                 closeModal();
             }
         }
@@ -1105,8 +1335,10 @@
             selectModeBtn.classList.add('mode-active');
             addModeBtn.classList.remove('mode-active');
             annotateModeBtn.classList.remove('mode-active');
-            canvas.style.cursor = 'pointer';
-            drawGeoJSON();
+            if (activeGeoState) {
+                activeGeoState.canvas.style.cursor = 'pointer';
+                drawGeoJSON(activeGeoState);
+            }
         });
         
         addModeBtn.addEventListener('click', () => {
@@ -1114,8 +1346,10 @@
             addModeBtn.classList.add('mode-active');
             selectModeBtn.classList.remove('mode-active');
             annotateModeBtn.classList.remove('mode-active');
-            canvas.style.cursor = 'crosshair';
-            drawGeoJSON();
+            if (activeGeoState) {
+                activeGeoState.canvas.style.cursor = 'crosshair';
+                drawGeoJSON(activeGeoState);
+            }
         });
         
         annotateModeBtn.addEventListener('click', () => {
@@ -1123,87 +1357,79 @@
             annotateModeBtn.classList.add('mode-active');
             selectModeBtn.classList.remove('mode-active');
             addModeBtn.classList.remove('mode-active');
-            canvas.style.cursor = 'text';
-            drawGeoJSON();
+            if (activeGeoState) {
+                activeGeoState.canvas.style.cursor = 'text';
+                drawGeoJSON(activeGeoState);
+            }
         });
         
         // Clear custom pins
         clearPinsBtn.addEventListener('click', () => {
-            customPins = [];
-            drawGeoJSON();
-        });
-        
-        // Rotation controls
-        rotationSlider.addEventListener('input', (e) => {
-            rotationAngle = parseInt(e.target.value);
-            rotationValue.textContent = rotationAngle + '°';
-            drawGeoJSON();
-        });
-        
-        resetRotationBtn.addEventListener('click', () => {
-            rotationAngle = 0;
-            rotationSlider.value = 0;
-            rotationValue.textContent = '0°';
-            drawGeoJSON();
+            if (activeGeoState) {
+                activeGeoState.customPins = [];
+                drawGeoJSON(activeGeoState);
+            }
         });
         
         // Export GeoJSON
         exportBtn.addEventListener('click', () => {
-            // Create a deep copy of the original geojson
             const exportData = {
                 type: "FeatureCollection",
-                features: []
+                geoViews: Object.values(geoStates).map(state => {
+                    const viewData = {
+                        id: `geo-view-${state.id}`,
+                        type: "FeatureCollection",
+                        features: [],
+                        metadata: {
+                            rotationAngle: state.rotationAngle
+                        }
+                    };
+                    
+                    // Add all original features
+                    state.geojson.features.forEach(feature => {
+                        const featureCopy = JSON.parse(JSON.stringify(feature));
+                        viewData.features.push(featureCopy);
+                    });
+                    
+                    // Add custom pins
+                    state.customPins.forEach(pin => {
+                        viewData.features.push({
+                            id: pin.id,
+                            type: "Feature",
+                            geometry: {
+                                type: "Point",
+                                coordinates: [pin.lon, pin.lat]
+                            },
+                            properties: {
+                                mode: "point",
+                                customText: pin.text || "",
+                                isCustomPin: true
+                            }
+                        });
+                    });
+                    
+                    // Add annotations
+                    state.annotations.forEach(ann => {
+                        viewData.features.push({
+                            id: ann.id,
+                            type: "Feature",
+                            geometry: {
+                                type: "Point",
+                                coordinates: [ann.lon, ann.lat]
+                            },
+                            properties: {
+                                mode: "annotation",
+                                annotationText: ann.text,
+                                isAnnotation: true
+                            }
+                        });
+                    });
+                    
+                    return viewData;
+                })
             };
             
-            // Add all original features with updated custom text
-            geojson.features.forEach(feature => {
-                const featureCopy = JSON.parse(JSON.stringify(feature));
-                exportData.features.push(featureCopy);
-            });
-            
-            // Add custom pins as new features
-            customPins.forEach(pin => {
-                exportData.features.push({
-                    id: pin.id,
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: [pin.lon, pin.lat]
-                    },
-                    properties: {
-                        mode: "point",
-                        customText: pin.text || "",
-                        isCustomPin: true
-                    }
-                });
-            });
-            
-            // Add rotation metadata to export
-            exportData.metadata = {
-                rotationAngle: rotationAngle
-            };
-            
-            // Add annotations as features
-            annotations.forEach(ann => {
-                exportData.features.push({
-                    id: ann.id,
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: [ann.lon, ann.lat]
-                    },
-                    properties: {
-                        mode: "annotation",
-                        annotationText: ann.text,
-                        isAnnotation: true
-                    }
-                });
-            });
-            
-            // Convert to JSON string with pretty formatting
             const jsonString = JSON.stringify(exportData, null, 2);
-            
-            // Create a blob and download
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1214,7 +1440,180 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert('GeoJSON exported successfully with annotations!');
+            alert('GeoJSON exported successfully with all views and annotations!');
+        });
+        
+        // Capture GeoJSON canvas-wrapper as image
+        const captureGeoImageBtn = document.getElementById('captureGeoImage');
+        captureGeoImageBtn.addEventListener('click', async () => {
+            if (!activeGeoState) return;
+            
+            // Find the active canvas-wrapper
+            const activePanel = geoPanels[activeGeoId];
+            const canvasWrapper = activePanel.querySelector('.canvas-wrapper');
+            
+            if (!canvasWrapper) {
+                alert('Canvas wrapper not found!');
+                return;
+            }
+            
+            try {
+                // Show loading message
+                captureGeoImageBtn.disabled = true;
+                captureGeoImageBtn.textContent = 'Capturing...';
+                
+                // Create a temporary container with only the elements we want to capture
+                const tempContainer = document.createElement('div');
+                tempContainer.style.position = 'absolute';
+                tempContainer.style.left = '-9999px';
+                tempContainer.style.top = '0';
+                tempContainer.style.width = activeGeoState.canvas.width + 'px';
+                tempContainer.style.height = activeGeoState.canvas.height + 'px';
+                tempContainer.style.backgroundColor = '#ffffff';
+                tempContainer.style.overflow = 'hidden';
+                document.body.appendChild(tempContainer);
+                
+                // Clone the canvas by creating a new one and copying the image data
+                const clonedCanvas = document.createElement('canvas');
+                clonedCanvas.width = activeGeoState.canvas.width;
+                clonedCanvas.height = activeGeoState.canvas.height;
+                const clonedCtx = clonedCanvas.getContext('2d');
+                clonedCtx.drawImage(activeGeoState.canvas, 0, 0);
+                clonedCanvas.style.position = 'absolute';
+                clonedCanvas.style.left = '0';
+                clonedCanvas.style.top = '0';
+                clonedCanvas.style.display = 'block';
+                tempContainer.appendChild(clonedCanvas);
+                
+                // Clone labels container
+                const labelsContainer = activeGeoState.labelsContainer;
+                if (labelsContainer && labelsContainer.children.length > 0) {
+                    const clonedLabels = labelsContainer.cloneNode(true);
+                    clonedLabels.style.position = 'absolute';
+                    clonedLabels.style.left = '0';
+                    clonedLabels.style.top = '0';
+                    clonedLabels.style.width = activeGeoState.canvas.width + 'px';
+                    clonedLabels.style.height = activeGeoState.canvas.height + 'px';
+                    // Remove borders and shadows from cloned labels
+                    Array.from(clonedLabels.querySelectorAll('.point-label')).forEach(label => {
+                        label.style.border = 'none';
+                        label.style.boxShadow = 'none';
+                    });
+                    tempContainer.appendChild(clonedLabels);
+                }
+                
+                // Clone annotations container
+                const annotationsContainer = activeGeoState.annotationsContainer;
+                if (annotationsContainer && annotationsContainer.children.length > 0) {
+                    const clonedAnnotations = annotationsContainer.cloneNode(true);
+                    clonedAnnotations.style.position = 'absolute';
+                    clonedAnnotations.style.left = '0';
+                    clonedAnnotations.style.top = '0';
+                    clonedAnnotations.style.width = activeGeoState.canvas.width + 'px';
+                    clonedAnnotations.style.height = activeGeoState.canvas.height + 'px';
+                    // Remove borders and shadows from cloned annotations
+                    Array.from(clonedAnnotations.querySelectorAll('.annotation')).forEach(annotation => {
+                        annotation.style.border = 'none';
+                        annotation.style.boxShadow = 'none';
+                    });
+                    tempContainer.appendChild(clonedAnnotations);
+                }
+                
+                // Wait a moment for the DOM to update
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                // Capture the temporary container
+                const canvas = await html2canvas(tempContainer, {
+                    backgroundColor: '#ffffff',
+                    scale: 1,
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: false,
+                    width: activeGeoState.canvas.width,
+                    height: activeGeoState.canvas.height
+                });
+                
+                // Remove temporary container
+                document.body.removeChild(tempContainer);
+                
+                // Convert to image and download
+                const imageData = canvas.toDataURL('image/png');
+                const blob = await (await fetch(imageData)).blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `geojson-canvas-${activeGeoId}-${new Date().toISOString().slice(0,10)}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('Image captured successfully!');
+            } catch (error) {
+                console.error('Error capturing image:', error);
+                alert('Error capturing image. Please try again.');
+            } finally {
+                captureGeoImageBtn.disabled = false;
+                captureGeoImageBtn.textContent = '📷 Capture Image';
+            }
+        });
+        
+        // GeoJSON tab switching
+        function updateGeoPanelVisibility() {
+            Object.entries(geoPanels).forEach(([panelId, panelEl]) => {
+                const isActive = parseInt(panelId, 10) === activeGeoId;
+                panelEl.classList.toggle('active', isActive);
+                panelEl.style.display = isActive ? 'block' : 'none';
+            });
+        }
+        
+        function setActiveGeo(id) {
+            if (activeGeoId === id) {
+                updateGeoPanelVisibility();
+                return;
+            }
+            
+            activeGeoId = id;
+            activeGeoState = geoStates[activeGeoId];
+            
+            geoTabs.forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.geo-tab[data-geo="${id}"]`).classList.add('active');
+            
+            updateGeoPanelVisibility();
+            
+            // Update cursor based on current mode
+            if (activeGeoState) {
+                if (mode === 'select') {
+                    activeGeoState.canvas.style.cursor = 'pointer';
+                } else if (mode === 'add') {
+                    activeGeoState.canvas.style.cursor = 'crosshair';
+                } else if (mode === 'annotate') {
+                    activeGeoState.canvas.style.cursor = 'text';
+                }
+                drawGeoJSON(activeGeoState);
+            }
+        }
+        
+        // Initialize GeoJSON states
+        geoStates = {
+            1: createGeoState(1),
+            2: createGeoState(2)
+        };
+        
+        activeGeoId = 1;
+        activeGeoState = geoStates[activeGeoId];
+        
+        // Initialize first view
+        drawGeoJSON(activeGeoState);
+        updateGeoPanelVisibility();
+        
+        // Tab switching
+        geoTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetId = parseInt(tab.dataset.geo, 10);
+                if (!geoStates[targetId]) return;
+                setActiveGeo(targetId);
+            });
         });
         
         // View toggle
@@ -1268,6 +1667,8 @@
         let lineWidth = 2;
         let eraserSize = 20;
         let eraserType = 'circle'; // 'circle' or 'square'
+        let lineStyle = 'solid'; // 'solid', 'dashed', 'dotted'
+        let rectangleStyle = 'solid'; // 'solid', 'dotted'
         
         function createCanvasState(id) {
             const canvas = document.getElementById(`drawingCanvas${id}`);
@@ -1352,6 +1753,165 @@
             URL.revokeObjectURL(url);
             
             alert('Drawing exported successfully with pins and annotations!');
+        });
+        
+        // Capture Drawing canvas-wrapper as image
+        const captureDrawingImageBtn = document.getElementById('captureDrawingImage');
+        captureDrawingImageBtn.addEventListener('click', async () => {
+            if (!activeState) return;
+            
+            // Find the active canvas-wrapper
+            const activePanel = canvasPanels[activeCanvasId];
+            
+            if (!activePanel) {
+                alert('Canvas wrapper not found!');
+                return;
+            }
+            
+            try {
+                // Show loading message
+                captureDrawingImageBtn.disabled = true;
+                captureDrawingImageBtn.textContent = 'Capturing...';
+                
+                // Hide the drawing tools sidebar and eraser cursor temporarily for cleaner capture
+                const drawingTools = document.querySelector('.drawing-tools');
+                const originalDisplay = drawingTools ? drawingTools.style.display : '';
+                if (drawingTools) {
+                    drawingTools.style.display = 'none';
+                }
+                
+                // Hide eraser cursor if visible
+                const eraserCursor = activeState.eraserCursor;
+                const eraserCursorOriginalDisplay = eraserCursor ? eraserCursor.style.display : '';
+                if (eraserCursor) {
+                    eraserCursor.style.display = 'none';
+                }
+                
+                // Hide text input box if visible
+                const textInputBox = activeState.textInputBox;
+                const textInputBoxOriginalDisplay = textInputBox ? textInputBox.style.display : '';
+                if (textInputBox) {
+                    textInputBox.style.display = 'none';
+                }
+                
+                // Hide preview canvas if it exists
+                const previewCanvas = activeState.previewCanvas;
+                const previewCanvasOriginalDisplay = previewCanvas ? previewCanvas.style.display : '';
+                if (previewCanvas) {
+                    previewCanvas.style.display = 'none';
+                }
+                
+                // Wait a moment for the UI to update
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Create a temporary container with only the elements we want to capture
+                const tempContainer = document.createElement('div');
+                tempContainer.style.position = 'absolute';
+                tempContainer.style.left = '-9999px';
+                tempContainer.style.top = '0';
+                tempContainer.style.width = activeState.canvas.width + 'px';
+                tempContainer.style.height = activeState.canvas.height + 'px';
+                tempContainer.style.backgroundColor = '#ffffff';
+                tempContainer.style.overflow = 'hidden';
+                document.body.appendChild(tempContainer);
+                
+                // Clone the canvas by creating a new one and copying the image data
+                const clonedCanvas = document.createElement('canvas');
+                clonedCanvas.width = activeState.canvas.width;
+                clonedCanvas.height = activeState.canvas.height;
+                const clonedCtx = clonedCanvas.getContext('2d');
+                clonedCtx.drawImage(activeState.canvas, 0, 0);
+                clonedCanvas.style.position = 'absolute';
+                clonedCanvas.style.left = '0';
+                clonedCanvas.style.top = '0';
+                clonedCanvas.style.display = 'block';
+                tempContainer.appendChild(clonedCanvas);
+                
+                // Clone labels container
+                const labelsContainer = activeState.labelsContainer;
+                if (labelsContainer && labelsContainer.children.length > 0) {
+                    const clonedLabels = labelsContainer.cloneNode(true);
+                    clonedLabels.style.position = 'absolute';
+                    clonedLabels.style.left = '0';
+                    clonedLabels.style.top = '0';
+                    clonedLabels.style.width = activeState.canvas.width + 'px';
+                    clonedLabels.style.height = activeState.canvas.height + 'px';
+                    // Remove borders and shadows from cloned labels
+                    Array.from(clonedLabels.querySelectorAll('.point-label')).forEach(label => {
+                        label.style.border = 'none';
+                        label.style.boxShadow = 'none';
+                    });
+                    tempContainer.appendChild(clonedLabels);
+                }
+                
+                // Clone annotations container
+                const annotationsContainer = activeState.annotationsContainer;
+                if (annotationsContainer && annotationsContainer.children.length > 0) {
+                    const clonedAnnotations = annotationsContainer.cloneNode(true);
+                    clonedAnnotations.style.position = 'absolute';
+                    clonedAnnotations.style.left = '0';
+                    clonedAnnotations.style.top = '0';
+                    clonedAnnotations.style.width = activeState.canvas.width + 'px';
+                    clonedAnnotations.style.height = activeState.canvas.height + 'px';
+                    // Remove borders and shadows from cloned annotations
+                    Array.from(clonedAnnotations.querySelectorAll('.annotation')).forEach(annotation => {
+                        annotation.style.border = 'none';
+                        annotation.style.boxShadow = 'none';
+                    });
+                    tempContainer.appendChild(clonedAnnotations);
+                }
+                
+                // Wait a moment for the DOM to update
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                // Capture the temporary container
+                const canvas = await html2canvas(tempContainer, {
+                    backgroundColor: '#ffffff',
+                    scale: 1,
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: false,
+                    width: activeState.canvas.width,
+                    height: activeState.canvas.height
+                });
+                
+                // Remove temporary container
+                document.body.removeChild(tempContainer);
+                
+                // Restore drawing tools, eraser cursor, text input box, and preview canvas
+                if (drawingTools) {
+                    drawingTools.style.display = originalDisplay;
+                }
+                if (eraserCursor) {
+                    eraserCursor.style.display = eraserCursorOriginalDisplay;
+                }
+                if (textInputBox) {
+                    textInputBox.style.display = textInputBoxOriginalDisplay;
+                }
+                if (previewCanvas) {
+                    previewCanvas.style.display = previewCanvasOriginalDisplay;
+                }
+                
+                // Convert to image and download
+                const imageData = canvas.toDataURL('image/png');
+                const blob = await (await fetch(imageData)).blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `drawing-canvas-${activeCanvasId}-${new Date().toISOString().slice(0,10)}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('Image captured successfully!');
+            } catch (error) {
+                console.error('Error capturing image:', error);
+                alert('Error capturing image. Please try again.');
+            } finally {
+                captureDrawingImageBtn.disabled = false;
+                captureDrawingImageBtn.textContent = '📷 Capture Image';
+            }
         });
         
         function updateCanvasPanelVisibility() {
@@ -1621,6 +2181,69 @@
             });
         });
         
+        // Style selector functionality
+        const styleSelectorBtn = document.getElementById('styleSelectorBtn');
+        const styleSelectorDropdown = document.getElementById('styleSelectorDropdown');
+        
+        // Toggle dropdown
+        styleSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            styleSelectorDropdown.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!styleSelectorBtn.contains(e.target) && !styleSelectorDropdown.contains(e.target)) {
+                styleSelectorDropdown.classList.remove('show');
+            }
+        });
+        
+        // Handle style option selection
+        document.querySelectorAll('.style-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const type = option.dataset.type;
+                const style = option.dataset.style;
+                
+                // Update active state
+                document.querySelectorAll(`.style-option[data-type="${type}"]`).forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                option.classList.add('active');
+                
+                // Update style variables
+                if (type === 'line') {
+                    lineStyle = style;
+                } else if (type === 'rectangle') {
+                    rectangleStyle = style;
+                }
+                
+                // Update button text to show current styles
+                updateStyleButtonText();
+            });
+        });
+        
+        function updateStyleButtonText() {
+            const lineStyleText = lineStyle.charAt(0).toUpperCase() + lineStyle.slice(1);
+            const rectStyleText = rectangleStyle.charAt(0).toUpperCase() + rectangleStyle.slice(1);
+            styleSelectorBtn.textContent = `⚙️ Line: ${lineStyleText} | Rect: ${rectStyleText}`;
+        }
+        
+        // Initialize button text
+        updateStyleButtonText();
+        
+        // Helper function to get line dash pattern based on style
+        function getLineDashPattern(style) {
+            switch(style) {
+                case 'dashed':
+                    return [10, 5];
+                case 'dotted':
+                    return [2, 5];
+                case 'solid':
+                default:
+                    return [];
+            }
+        }
+        
         function handleCanvasMouseDown(e, state) {
             if (state.id !== activeCanvasId) return;
             const { x, y } = getCanvasCoordinates(e, state);
@@ -1789,13 +2412,16 @@
             } else if (state.previewCtx) {
                 state.previewCtx.strokeStyle = drawingColor;
                 state.previewCtx.lineWidth = lineWidth;
-                state.previewCtx.setLineDash([5, 5]);
-                if (currentTool === 'line' || currentTool === 'dottedLine') {
+                if (currentTool === 'line') {
+                    const dashPattern = getLineDashPattern(lineStyle);
+                    state.previewCtx.setLineDash(dashPattern.length > 0 ? [5, 5] : []); // Preview with dashed pattern
                     state.previewCtx.beginPath();
                     state.previewCtx.moveTo(state.startX, state.startY);
                     state.previewCtx.lineTo(x, y);
                     state.previewCtx.stroke();
                 } else if (currentTool === 'rectangle') {
+                    const dashPattern = getLineDashPattern(rectangleStyle);
+                    state.previewCtx.setLineDash(dashPattern.length > 0 ? [5, 5] : []); // Preview with dashed pattern
                     state.previewCtx.strokeRect(state.startX, state.startY, x - state.startX, y - state.startY);
                 } else if (currentTool === 'circle') {
                     const radius = Math.hypot(x - state.startX, y - state.startY);
@@ -1819,21 +2445,20 @@
             state.ctx.lineJoin = 'round';
             
             if (currentTool === 'line') {
-                state.ctx.beginPath();
-                state.ctx.moveTo(state.startX, state.startY);
-                state.ctx.lineTo(x, y);
-                state.ctx.stroke();
-            } else if (currentTool === 'dottedLine') {
-                state.ctx.setLineDash([10, 5]);
+                const dashPattern = getLineDashPattern(lineStyle);
+                state.ctx.setLineDash(dashPattern);
                 state.ctx.beginPath();
                 state.ctx.moveTo(state.startX, state.startY);
                 state.ctx.lineTo(x, y);
                 state.ctx.stroke();
                 state.ctx.setLineDash([]);
             } else if (currentTool === 'rectangle') {
+                const dashPattern = getLineDashPattern(rectangleStyle);
+                state.ctx.setLineDash(dashPattern);
                 state.ctx.beginPath();
                 state.ctx.rect(state.startX, state.startY, x - state.startX, y - state.startY);
                 state.ctx.stroke();
+                state.ctx.setLineDash([]);
             } else if (currentTool === 'circle') {
                 const radius = Math.hypot(x - state.startX, y - state.startY);
                 state.ctx.beginPath();
@@ -1935,8 +2560,6 @@
             const digit = Math.floor(Math.random() * 10);
             return letter + digit;
         }
-        
-        drawGeoJSON();
     </script>
 </body>
 </html>
