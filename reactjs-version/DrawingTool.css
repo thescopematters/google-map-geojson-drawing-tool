@@ -1,0 +1,478 @@
+/* Drawing Tool Styles */
+.drawing-tool-container {
+  font-family: Arial, sans-serif;
+  background: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 20px;
+}
+
+.drawing-tool-container h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.drawing-tool-container canvas {
+  border: 2px solid #333;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.info {
+  margin-top: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+}
+
+.info p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.controls {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.controls button {
+  margin-right: 10px;
+}
+
+.mode-active {
+  background: #1a73e8 !important;
+  color: white !important;
+}
+
+.annotation {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 50;
+  border: 1px solid #ddd;
+  font-weight: 500;
+  color: #333;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.canvas-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.view-toggle {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.canvas-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.canvas-tab {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  background: #f1f3f4;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5f6368;
+  transition: all 0.2s;
+}
+
+.canvas-tab:hover {
+  background: #e8eaed;
+  border-color: #4285f4;
+}
+
+.canvas-tab.active {
+  background: #4285f4;
+  color: white;
+  border-color: #4285f4;
+}
+
+.geo-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.geo-tab {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  background: #f1f3f4;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5f6368;
+  transition: all 0.2s;
+}
+
+.geo-tab:hover {
+  background: #e8eaed;
+  border-color: #4285f4;
+}
+
+.geo-tab.active {
+  background: #4285f4;
+  color: white;
+  border-color: #4285f4;
+}
+
+.geo-area {
+  position: relative;
+  display: flex;
+}
+
+.geo-panels {
+  position: relative;
+}
+
+.geo-panel {
+  display: none;
+  position: relative;
+}
+
+.geo-panel.active {
+  display: block;
+}
+
+.canvas-area {
+  position: relative;
+  display: flex;
+}
+
+.canvas-panels {
+  position: relative;
+}
+
+.canvas-panel {
+  display: none;
+  position: relative;
+}
+
+.canvas-panel.active {
+  display: block;
+}
+
+.drawing-tools {
+  position: absolute;
+  top: 20px;
+  right: -180px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 90%;
+  overflow-y: auto;
+  width: 160px;
+}
+
+.tool-btn {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  background: #f5f5f5;
+  border-color: #4285f4;
+}
+
+.tool-btn.active {
+  background: #4285f4;
+  color: white;
+  border-color: #4285f4;
+}
+
+.drawing-canvas {
+  border: 2px solid #ddd;
+  background: white;
+  cursor: crosshair;
+  position: relative;
+}
+
+.preview-layer {
+  z-index: 10;
+}
+
+.eraser-cursor {
+  position: absolute;
+  border: 2px solid #ea4335;
+  pointer-events: none;
+  display: none;
+  background: rgba(234, 67, 53, 0.1);
+}
+
+.eraser-cursor.circle {
+  border-radius: 50%;
+}
+
+.eraser-cursor.square {
+  border-radius: 0;
+}
+
+.text-input-box {
+  position: absolute;
+  border: 2px dashed #4285f4;
+  background: rgba(66, 133, 244, 0.1);
+  padding: 5px;
+  min-width: 100px;
+  min-height: 30px;
+  display: none;
+}
+
+.text-input-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 16px;
+  width: 100%;
+}
+
+.color-picker-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.color-picker-container label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.modal-content textarea {
+  width: 100%;
+  height: 100px;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.modal-content textarea:focus {
+  outline: none;
+  border-color: #4285f4;
+}
+
+.modal-content select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
+  background: white;
+}
+
+.modal-content select:focus {
+  outline: none;
+  border-color: #4285f4;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-primary {
+  background: #4285f4;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #3367d6;
+}
+
+.btn-secondary {
+  background: #f1f3f4;
+  color: #5f6368;
+}
+
+.btn-secondary:hover {
+  background: #e8eaed;
+}
+
+.point-label {
+  position: absolute;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 100;
+  transform: translate(0, 0);
+}
+
+.polygon-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(66, 133, 244, 0.95);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: none;
+}
+
+.polygon-hint.show {
+  display: block;
+}
+
+.style-selector-container {
+  position: relative;
+}
+
+.style-selector-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 5px;
+  padding: 8px;
+}
+
+.style-selector-dropdown.show {
+  display: block;
+}
+
+.style-option-group {
+  margin-bottom: 12px;
+}
+
+.style-option-group:last-child {
+  margin-bottom: 0;
+}
+
+.style-option-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f6368;
+  margin-bottom: 6px;
+}
+
+.style-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.style-option {
+  flex: 1;
+  min-width: 60px;
+  padding: 6px 8px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.style-option:hover {
+  background: #f5f5f5;
+  border-color: #4285f4;
+}
+
+.style-option.active {
+  background: #4285f4;
+  color: white;
+  border-color: #4285f4;
+}
+
