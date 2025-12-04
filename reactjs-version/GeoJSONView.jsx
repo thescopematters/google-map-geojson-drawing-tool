@@ -542,59 +542,38 @@ const GeoJSONView = ({
         }
       });
     } else if (mode === 'add') {
-      let checkX = clickX;
-      let checkY = clickY;
+      let pinX = clickX;
+      let pinY = clickY;
       if (rotationAngle !== 0 && centerPoint) {
         const inverted = inverseRotatePoint(clickX, clickY, centerPoint.x, centerPoint.y, rotationAngle);
-        checkX = inverted.x;
-        checkY = inverted.y;
+        pinX = inverted.x;
+        pinY = inverted.y;
       }
 
-      // Get polygon points for checking
-      const polygonPoints = [];
-      geojsonData.features.forEach(feature => {
-        if (feature.geometry.type === 'Polygon') {
-          feature.geometry.coordinates[0].forEach(coord => {
-            const { x, y } = projectToCanvasState(
-              coord[0],
-              coord[1],
-              calculatedBounds,
-              canvas,
-              0,
-              null
-            );
-            polygonPoints.push({ x, y });
-          });
-        }
-      });
+      // Convert canvas coordinates to lat/lon (works anywhere on canvas)
+      const { lon, lat } = canvasToLatLonState(pinX, pinY, calculatedBounds, canvas);
 
-      if (isPointInPolygon(checkX, checkY, polygonPoints)) {
-        const { lon, lat } = canvasToLatLonState(checkX, checkY, calculatedBounds, canvas);
+      const newPin = {
+        id: 'custom-' + Date.now(),
+        lon,
+        lat,
+        text: ''
+      };
 
-        const newPin = {
-          id: 'custom-' + Date.now(),
-          lon,
-          lat,
-          text: ''
-        };
+      // Update state and immediately draw with the updated pins
+      setCustomPins(prev => {
+        const updatedPins = [...(prev[geoId] || []), newPin];
 
-        // Update state and immediately draw with the updated pins
-        setCustomPins(prev => {
-          const updatedPins = [...(prev[geoId] || []), newPin];
-
-          // Draw immediately with the updated pins array
-          requestAnimationFrame(() => {
-            drawGeoJSON(geoId, updatedPins);
-          });
-
-          return {
-            ...prev,
-            [geoId]: updatedPins
-          };
+        // Draw immediately with the updated pins array
+        requestAnimationFrame(() => {
+          drawGeoJSON(geoId, updatedPins);
         });
-      } else {
-        alert('Please click inside the blue polygon area to add a pin');
-      }
+
+        return {
+          ...prev,
+          [geoId]: updatedPins
+        };
+      });
     } else if (mode === 'annotate') {
       let annotateX = clickX;
       let annotateY = clickY;
@@ -645,8 +624,8 @@ const GeoJSONView = ({
     }
 
     if (mode === 'add') {
-      let checkX = x;
-      let checkY = y;
+      let pinX = x;
+      let pinY = y;
       const calculatedBounds = bounds[geoId];
       const rotationAngle = rotationAngles[geoId] || 0;
       const centerPoint = centerPoints[geoId];
@@ -655,50 +634,30 @@ const GeoJSONView = ({
 
       if (rotationAngle !== 0 && centerPoint) {
         const inverted = inverseRotatePoint(x, y, centerPoint.x, centerPoint.y, rotationAngle);
-        checkX = inverted.x;
-        checkY = inverted.y;
+        pinX = inverted.x;
+        pinY = inverted.y;
       }
 
-      const polygonPoints = [];
-      geojsonData.features.forEach(feature => {
-        if (feature.geometry.type === 'Polygon') {
-          feature.geometry.coordinates[0].forEach(coord => {
-            const { x, y } = projectToCanvasState(
-              coord[0],
-              coord[1],
-              calculatedBounds,
-              canvas,
-              0,
-              null
-            );
-            polygonPoints.push({ x, y });
-          });
-        }
-      });
+      // Convert canvas coordinates to lat/lon (works anywhere on canvas)
+      const { lon, lat } = canvasToLatLonState(pinX, pinY, calculatedBounds, canvas);
 
-      if (isPointInPolygon(checkX, checkY, polygonPoints)) {
-        const { lon, lat } = canvasToLatLonState(checkX, checkY, calculatedBounds, canvas);
+      const newPin = {
+        id: 'custom-' + Date.now(),
+        lon,
+        lat,
+        text: ''
+      };
 
-        const newPin = {
-          id: 'custom-' + Date.now(),
-          lon,
-          lat,
-          text: ''
-        };
-
-        setCustomPins(prev => {
-          const updatedPins = [...(prev[geoId] || []), newPin];
-          requestAnimationFrame(() => {
-            drawGeoJSON(geoId, updatedPins, true);
-          });
-          return {
-            ...prev,
-            [geoId]: updatedPins
-          };
+      setCustomPins(prev => {
+        const updatedPins = [...(prev[geoId] || []), newPin];
+        requestAnimationFrame(() => {
+          drawGeoJSON(geoId, updatedPins, true);
         });
-      } else {
-        alert('Please click inside the blue polygon area to add a pin');
-      }
+        return {
+          ...prev,
+          [geoId]: updatedPins
+        };
+      });
       return;
     }
 
